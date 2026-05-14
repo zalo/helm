@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------ */
+/* Design tokens — mirrored from tailwind.config.js for non-Tailwind   */
+/* consumers (dockview theme, third-party embeds).                     */
+/* ------------------------------------------------------------------ */
+:root {
+  --bg-0: #0d1117;
+  --bg-1: #161b22;
+  --bg-2: #21262d;
+  --bg-3: #2d333b;
+  --border: #30363d;
+  --border-strong: #444c56;
+  --fg: #e6edf3;
+  --fg-muted: #8b949e;
+  --fg-faint: #6e7681;
+  --gain: #3fb950;
+  --loss: #f85149;
+  --accent: #58a6ff;
+  --warn: #d29922;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg-0);
+  color: var(--fg);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* Numbers must be scannable: tabular figures everywhere numeric. */
+.num {
+  font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Brief flash on a value change — green up, red down. */
+@keyframes flash-gain {
+  from {
+    background-color: rgba(63, 185, 80, 0.25);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+@keyframes flash-loss {
+  from {
+    background-color: rgba(248, 81, 73, 0.25);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+.flash-gain {
+  animation: flash-gain 0.6s ease-out;
+}
+.flash-loss {
+  animation: flash-loss 0.6s ease-out;
+}
+
+/* Scrollbars — thin, recessive. */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--bg-3);
+  border-radius: 5px;
+  border: 2px solid var(--bg-0);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+/* ------------------------------------------------------------------ */
+/* Dockview dark theme — overrides on top of dockview/dist/styles.     */
+/* ------------------------------------------------------------------ */
+.dockview-theme-helm {
+  --dv-background-color: var(--bg-0);
+  --dv-paneview-active-outline-color: var(--accent);
+  --dv-tabs-and-actions-container-background-color: var(--bg-0);
+  --dv-group-view-background-color: var(--bg-1);
+  --dv-tabs-container-scrollbar-color: var(--bg-3);
+
+  --dv-activegroup-visiblepanel-tab-background-color: var(--bg-2);
+  --dv-activegroup-hiddenpanel-tab-background-color: var(--bg-0);
+  --dv-inactivegroup-visiblepanel-tab-background-color: var(--bg-1);
+  --dv-inactivegroup-hiddenpanel-tab-background-color: var(--bg-0);
+  --dv-activegroup-visiblepanel-tab-color: var(--fg);
+  --dv-activegroup-hiddenpanel-tab-color: var(--fg-faint);
+  --dv-inactivegroup-visiblepanel-tab-color: var(--fg-muted);
+  --dv-inactivegroup-hiddenpanel-tab-color: var(--fg-faint);
+
+  --dv-separator-border: var(--border);
+  --dv-paneview-header-border-color: var(--border);
+  --dv-tab-divider-color: var(--border);
+  --dv-icon-hover-background-color: var(--bg-3);
+  --dv-floating-box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --dv-drag-over-background-color: rgba(88, 166, 255, 0.12);
+  --dv-drag-over-border-color: var(--accent);
+
+  font-size: 12px;
+}
+
+.dockview-theme-helm .dv-tab {
+  font-size: 12px;
+  height: 30px;
+  border-right: 1px solid var(--border);
+}
+
+/* ------------------------------------------------------------------ */
+/* Small shared component primitives.                                  */
+/* ------------------------------------------------------------------ */
+@layer components {
+  .panel-pad {
+    @apply p-2.5;
+  }
+  .hairline {
+    @apply border-border;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-2xs font-medium;
+  }
+  .btn {
+    @apply inline-flex items-center gap-1.5 rounded border border-border bg-bg-2
+      px-2 py-1 text-sm text-fg transition-colors hover:bg-bg-3
+      disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-accent {
+    @apply border-accent/40 bg-accent/15 text-accent hover:bg-accent/25;
+  }
+  .scroll-y {
+    @apply h-full overflow-y-auto;
+  }
+}

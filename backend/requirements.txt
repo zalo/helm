@@ -1,0 +1,20 @@
+# --- Helm backend core ---
+fastapi>=0.115
+uvicorn[standard]>=0.32
+pydantic>=2.9
+pydantic-settings>=2.6
+httpx>=0.27
+feedparser>=6.0
+beautifulsoup4>=4.12
+python-dateutil>=2.9
+cachetools>=5.5
+
+# --- Trading engine (optional) ---
+# Helm runs in demo mode without this. Install to connect a real venue:
+#   pip install nautilus_trader
+# nautilus_trader>=1.200
+
+# --- Research layer (optional) ---
+# OpenBB is used only as a research/feed source, never as the execution engine.
+#   pip install openbb
+# openbb>=4.3
