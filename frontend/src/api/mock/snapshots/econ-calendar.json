@@ -1,0 +1,172 @@
+﻿[
+    {
+        "id":  "econ-calendar-e370e24b17e8809b",
+        "source_id":  "econ-calendar",
+        "title":  "CPI â Consumer Price Index",
+        "summary":  "Monthly, ~mid-month 08:30 ET Â· importance: high",
+        "url":  "",
+        "author":  "",
+        "published":  "2026-05-15T00:03:24.034622Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "cadence":  "Monthly, ~mid-month 08:30 ET",
+                     "importance":  "high",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "econ-calendar-edbc3636a037b953",
+        "source_id":  "econ-calendar",
+        "title":  "FOMC Rate Decision",
+        "summary":  "8x/year, 14:00 ET Â· importance: high",
+        "url":  "",
+        "author":  "",
+        "published":  "2026-05-15T00:03:24.034622Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "cadence":  "8x/year, 14:00 ET",
+                     "importance":  "high",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "econ-calendar-d7805895f1f1b16d",
+        "source_id":  "econ-calendar",
+        "title":  "Nonfarm Payrolls (NFP)",
+        "summary":  "First Friday, 08:30 ET Â· importance: high",
+        "url":  "",
+        "author":  "",
+        "published":  "2026-05-15T00:03:24.034622Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "cadence":  "First Friday, 08:30 ET",
+                     "importance":  "high",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "econ-calendar-6bbcbadf511c607b",
+        "source_id":  "econ-calendar",
+        "title":  "PCE Price Index",
+        "summary":  "Monthly, end of month 08:30 ET Â· importance: high",
+        "url":  "",
+        "author":  "",
+        "published":  "2026-05-15T00:03:24.034622Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "cadence":  "Monthly, end of month 08:30 ET",
+                     "importance":  "high",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "econ-calendar-fa13ef35c6bcce01",
+        "source_id":  "econ-calendar",
+        "title":  "Retail Sales",
+        "summary":  "Monthly, ~mid-month 08:30 ET Â· importance: medium",
+        "url":  "",
+        "author":  "",
+        "published":  "2026-05-15T00:03:24.034622Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "cadence":  "Monthly, ~mid-month 08:30 ET",
+                     "importance":  "medium",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "econ-calendar-1b1bcb5df00ef636",
+        "source_id":  "econ-calendar",
+        "title":  "PPI â Producer Price Index",
+        "summary":  "Monthly, ~mid-month 08:30 ET Â· importance: medium",
+        "url":  "",
+        "author":  "",
+        "published":  "2026-05-15T00:03:24.034622Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "cadence":  "Monthly, ~mid-month 08:30 ET",
+                     "importance":  "medium",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "econ-calendar-315017b3a381c2f5",
+        "source_id":  "econ-calendar",
+        "title":  "ISM Manufacturing PMI",
+        "summary":  "First business day 10:00 ET Â· importance: medium",
+        "url":  "",
+        "author":  "",
+        "published":  "2026-05-15T00:03:24.034622Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "cadence":  "First business day 10:00 ET",
+                     "importance":  "medium",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "econ-calendar-a4b6badb743812ad",
+        "source_id":  "econ-calendar",
+        "title":  "Initial Jobless Claims",
+        "summary":  "Weekly Thursday 08:30 ET Â· importance: medium",
+        "url":  "",
+        "author":  "",
+        "published":  "2026-05-15T00:03:24.034622Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "cadence":  "Weekly Thursday 08:30 ET",
+                     "importance":  "medium",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "econ-calendar-530a63fcf7efe97e",
+        "source_id":  "econ-calendar",
+        "title":  "GDP (advance estimate)",
+        "summary":  "Quarterly, end of month 08:30 ET Â· importance: high",
+        "url":  "",
+        "author":  "",
+        "published":  "2026-05-15T00:03:24.034622Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "cadence":  "Quarterly, end of month 08:30 ET",
+                     "importance":  "high",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "econ-calendar-1fe70c3cc424c8ed",
+        "source_id":  "econ-calendar",
+        "title":  "FOMC Meeting Minutes",
+        "summary":  "3 weeks after each decision 14:00 ET Â· importance: medium",
+        "url":  "",
+        "author":  "",
+        "published":  "2026-05-15T00:03:24.034622Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "cadence":  "3 weeks after each decision 14:00 ET",
+                     "importance":  "medium",
+                     "curated":  true
+                 }
+    }
+]

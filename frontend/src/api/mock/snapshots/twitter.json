@@ -1,0 +1,130 @@
+﻿[
+    {
+        "id":  "twitter-7fb11bee65a8c06f",
+        "source_id":  "twitter",
+        "title":  "@DeItaone",
+        "summary":  "Walter Bloomberg â fast headline tape",
+        "url":  "https://twitter.com/DeItaone",
+        "author":  "DeItaone",
+        "published":  null,
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "handle":  "DeItaone",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "twitter-e5fa7418e01a9c2a",
+        "source_id":  "twitter",
+        "title":  "@FirstSquawk",
+        "summary":  "First Squawk â breaking market news",
+        "url":  "https://twitter.com/FirstSquawk",
+        "author":  "FirstSquawk",
+        "published":  null,
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "handle":  "FirstSquawk",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "twitter-4b3caf4da11267c6",
+        "source_id":  "twitter",
+        "title":  "@unusual_whales",
+        "summary":  "Unusual Whales â options flow \u0026 politics",
+        "url":  "https://twitter.com/unusual_whales",
+        "author":  "unusual_whales",
+        "published":  null,
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "handle":  "unusual_whales",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "twitter-beb03c9ebe85b87d",
+        "source_id":  "twitter",
+        "title":  "@zerohedge",
+        "summary":  "ZeroHedge â markets \u0026 macro commentary",
+        "url":  "https://twitter.com/zerohedge",
+        "author":  "zerohedge",
+        "published":  null,
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "handle":  "zerohedge",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "twitter-1d9e32c227066a36",
+        "source_id":  "twitter",
+        "title":  "@LiveSquawk",
+        "summary":  "LiveSquawk â real-time news wire",
+        "url":  "https://twitter.com/LiveSquawk",
+        "author":  "LiveSquawk",
+        "published":  null,
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "handle":  "LiveSquawk",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "twitter-1130bafd5e5ec6f4",
+        "source_id":  "twitter",
+        "title":  "@federalreserve",
+        "summary":  "Federal Reserve â official",
+        "url":  "https://twitter.com/federalreserve",
+        "author":  "federalreserve",
+        "published":  null,
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "handle":  "federalreserve",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "twitter-b0e85048723578fa",
+        "source_id":  "twitter",
+        "title":  "@SECGov",
+        "summary":  "U.S. SEC â official",
+        "url":  "https://twitter.com/SECGov",
+        "author":  "SECGov",
+        "published":  null,
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "handle":  "SECGov",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "twitter-211b63d66c528b01",
+        "source_id":  "twitter",
+        "title":  "@CNBC",
+        "summary":  "CNBC â business news",
+        "url":  "https://twitter.com/CNBC",
+        "author":  "CNBC",
+        "published":  null,
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "handle":  "CNBC",
+                     "curated":  true
+                 }
+    }
+]

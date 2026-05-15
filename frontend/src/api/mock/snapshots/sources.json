@@ -1,0 +1,155 @@
+﻿[
+    {
+        "id":  "whitehouse",
+        "name":  "White House Press",
+        "category":  "News",
+        "description":  "Presidential messages, statements, and actions from whitehouse.gov\u0027s news feed.",
+        "kind":  "rss",
+        "icon":  "landmark",
+        "params":  {
+
+                   },
+        "refresh_s":  900
+    },
+    {
+        "id":  "reddit",
+        "name":  "Reddit Threads",
+        "category":  "Social",
+        "description":  "Hot threads from finance subreddits (RSS).",
+        "kind":  "rss",
+        "icon":  "message-square",
+        "params":  {
+                       "subreddit":  {
+                                         "type":  "string",
+                                         "default":  "wallstreetbets",
+                                         "enum":  [
+                                                      "wallstreetbets",
+                                                      "stocks",
+                                                      "cryptocurrency",
+                                                      "economics"
+                                                  ],
+                                         "description":  "Which subreddit to pull."
+                                     }
+                   },
+        "refresh_s":  300
+    },
+    {
+        "id":  "twitter",
+        "name":  "X / Twitter",
+        "category":  "Social",
+        "description":  "Curated finance/markets accounts; individual posts embed via oEmbed.",
+        "kind":  "oembed",
+        "icon":  "twitter",
+        "params":  {
+                       "url":  {
+                                   "type":  "string",
+                                   "default":  "",
+                                   "description":  "Tweet/profile URL to embed via /oembed."
+                               }
+                   },
+        "refresh_s":  600
+    },
+    {
+        "id":  "discord",
+        "name":  "Discord Activity",
+        "category":  "Social",
+        "description":  "Widgetbot iframe + live presence from a server\u0027s widget.",
+        "kind":  "iframe",
+        "icon":  "message-circle",
+        "params":  {
+                       "guild_id":  {
+                                        "type":  "string",
+                                        "default":  "",
+                                        "description":  "Discord server (guild) ID."
+                                    },
+                       "channel_id":  {
+                                          "type":  "string",
+                                          "default":  "",
+                                          "description":  "Optional channel ID to focus the embed."
+                                      }
+                   },
+        "refresh_s":  120
+    },
+    {
+        "id":  "sec-edgar",
+        "name":  "SEC EDGAR Filings",
+        "category":  "Markets",
+        "description":  "Latest SEC filings (8-K, 10-Q, 10-K, Form 4) via the EDGAR Atom feed.",
+        "kind":  "rss",
+        "icon":  "file-text",
+        "params":  {
+                       "type":  {
+                                    "type":  "string",
+                                    "default":  "8-K",
+                                    "enum":  [
+                                                 "8-K",
+                                                 "10-Q",
+                                                 "10-K",
+                                                 "4"
+                                             ],
+                                    "description":  "Filing type to track."
+                                }
+                   },
+        "refresh_s":  300
+    },
+    {
+        "id":  "congress-trades",
+        "name":  "Congress Trades",
+        "category":  "Markets",
+        "description":  "Congressional stock-trade disclosures (house/senate stock watcher datasets).",
+        "kind":  "json",
+        "icon":  "briefcase",
+        "params":  {
+                       "chamber":  {
+                                       "type":  "string",
+                                       "default":  "house",
+                                       "enum":  [
+                                                    "house",
+                                                    "senate"
+                                                ],
+                                       "description":  "Which chamber\u0027s disclosures to show."
+                                   }
+                   },
+        "refresh_s":  3600
+    },
+    {
+        "id":  "econ-calendar",
+        "name":  "Economic Calendar",
+        "category":  "Macro",
+        "description":  "Upcoming high-impact economic releases (CPI, FOMC, NFPâ¦).",
+        "kind":  "json",
+        "icon":  "calendar",
+        "params":  {
+
+                   },
+        "refresh_s":  3600
+    },
+    {
+        "id":  "fear-greed",
+        "name":  "Crypto Fear \u0026 Greed",
+        "category":  "Macro",
+        "description":  "Daily crypto Fear \u0026 Greed index readings with sentiment.",
+        "kind":  "json",
+        "icon":  "gauge",
+        "params":  {
+
+                   },
+        "refresh_s":  1800
+    },
+    {
+        "id":  "hacker-news",
+        "name":  "Hacker News Signal",
+        "category":  "News",
+        "description":  "Recent HN stories matching a tech/markets query.",
+        "kind":  "json",
+        "icon":  "newspaper",
+        "params":  {
+                       "query":  {
+                                     "type":  "string",
+                                     "default":  "AI OR semiconductor OR Fed OR crypto",
+                                     "description":  "Algolia search query. Supports \u0027 OR \u0027-joined terms â each is searched separately and the results merged."
+                                 }
+                   },
+        "refresh_s":  600
+    }
+]

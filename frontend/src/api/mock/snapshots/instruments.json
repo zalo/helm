@@ -1,0 +1,56 @@
+﻿[
+    {
+        "id":  "AAPL.NASDAQ",
+        "symbol":  "AAPL",
+        "venue":  "NASDAQ",
+        "asset_class":  "EQUITY",
+        "quote_currency":  "USD",
+        "price_precision":  2,
+        "size_precision":  0
+    },
+    {
+        "id":  "NVDA.NASDAQ",
+        "symbol":  "NVDA",
+        "venue":  "NASDAQ",
+        "asset_class":  "EQUITY",
+        "quote_currency":  "USD",
+        "price_precision":  2,
+        "size_precision":  0
+    },
+    {
+        "id":  "TSLA.NASDAQ",
+        "symbol":  "TSLA",
+        "venue":  "NASDAQ",
+        "asset_class":  "EQUITY",
+        "quote_currency":  "USD",
+        "price_precision":  2,
+        "size_precision":  0
+    },
+    {
+        "id":  "BTCUSDT.BINANCE",
+        "symbol":  "BTCUSDT",
+        "venue":  "BINANCE",
+        "asset_class":  "CRYPTO",
+        "quote_currency":  "USDT",
+        "price_precision":  2,
+        "size_precision":  4
+    },
+    {
+        "id":  "ETHUSDT.BINANCE",
+        "symbol":  "ETHUSDT",
+        "venue":  "BINANCE",
+        "asset_class":  "CRYPTO",
+        "quote_currency":  "USDT",
+        "price_precision":  2,
+        "size_precision":  4
+    },
+    {
+        "id":  "EURUSD.SIM",
+        "symbol":  "EURUSD",
+        "venue":  "SIM",
+        "asset_class":  "FX",
+        "quote_currency":  "USD",
+        "price_precision":  5,
+        "size_precision":  4
+    }
+]

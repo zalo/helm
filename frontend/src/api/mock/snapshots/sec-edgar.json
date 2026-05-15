@@ -1,0 +1,302 @@
+﻿[
+    {
+        "id":  "sec-edgar-c0da5ffe33689822",
+        "source_id":  "sec-edgar",
+        "title":  "8-K - ALLIANCE ENTERTAINMENT HOLDING CORP (0001823584) (Filer)",
+        "summary":  "Filed: 2026-05-14 AccNo: 0001493152-26-023212 Size: 29 MB Item 2.02: Results of Operations and Financial Condition Item 7.01: Regulation FD Disclosure Item 9.01: Financial Statements and Exhibits",
+        "url":  "https://www.sec.gov/Archives/edgar/data/1823584/000149315226023212/0001493152-26-023212-index.htm",
+        "author":  "",
+        "published":  "2026-05-14T21:29:55Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  null,
+        "meta":  {
+                     "filing_type":  "8-K"
+                 }
+    },
+    {
+        "id":  "sec-edgar-7bbce0dedb619a49",
+        "source_id":  "sec-edgar",
+        "title":  "8-K - Boost Run Inc. (0002090646) (Filer)",
+        "summary":  "Filed: 2026-05-14 AccNo: 0001493152-26-023208 Size: 2 MB Item 1.01: Entry into a Material Definitive Agreement Item 1.02: Termination of a Material Definitive Agreement Item 2.01: Completion of Acquisition or Disposition of Assets Item 3.01: Notice of Delisting or Failure to Satisfy a Continued Listing Rule or Standard; Transfer of Listing Item 3.02: Unregistered Sales of Equity Securities Item 3.",
+        "url":  "https://www.sec.gov/Archives/edgar/data/2090646/000149315226023208/0001493152-26-023208-index.htm",
+        "author":  "",
+        "published":  "2026-05-14T21:28:56Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  null,
+        "meta":  {
+                     "filing_type":  "8-K"
+                 }
+    },
+    {
+        "id":  "sec-edgar-7296b6054b1632eb",
+        "source_id":  "sec-edgar",
+        "title":  "8-K - APPLIED ENERGETICS, INC. (0000879911) (Filer)",
+        "summary":  "Filed: 2026-05-14 AccNo: 0001213900-26-056864 Size: 226 KB Item 8.01: Other Events Item 9.01: Financial Statements and Exhibits",
+        "url":  "https://www.sec.gov/Archives/edgar/data/879911/000121390026056864/0001213900-26-056864-index.htm",
+        "author":  "",
+        "published":  "2026-05-14T21:28:48Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  null,
+        "meta":  {
+                     "filing_type":  "8-K"
+                 }
+    },
+    {
+        "id":  "sec-edgar-edf013fc6a5a1db0",
+        "source_id":  "sec-edgar",
+        "title":  "8-K - G III APPAREL GROUP LTD /DE/ (0000821002) (Filer)",
+        "summary":  "Filed: 2026-05-14 AccNo: 0000950142-26-001394 Size: 1 MB Item 1.01: Entry into a Material Definitive Agreement Item 2.03: Creation of a Direct Financial Obligation or an Obligation under an Off-Balance Sheet Arrangement of a Registrant Item 7.01: Regulation FD Disclosure Item 9.01: Financial Statements and Exhibits",
+        "url":  "https://www.sec.gov/Archives/edgar/data/821002/000095014226001394/0000950142-26-001394-index.htm",
+        "author":  "",
+        "published":  "2026-05-14T21:28:13Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  null,
+        "meta":  {
+                     "filing_type":  "8-K"
+                 }
+    },
+    {
+        "id":  "sec-edgar-ad5897c2f747d454",
+        "source_id":  "sec-edgar",
+        "title":  "8-K - Glucotrack, Inc. (0001506983) (Filer)",
+        "summary":  "Filed: 2026-05-14 AccNo: 0001493152-26-023202 Size: 305 KB Item 2.02: Results of Operations and Financial Condition Item 9.01: Financial Statements and Exhibits",
+        "url":  "https://www.sec.gov/Archives/edgar/data/1506983/000149315226023202/0001493152-26-023202-index.htm",
+        "author":  "",
+        "published":  "2026-05-14T21:27:11Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  null,
+        "meta":  {
+                     "filing_type":  "8-K"
+                 }
+    },
+    {
+        "id":  "sec-edgar-6e000055a9f4501c",
+        "source_id":  "sec-edgar",
+        "title":  "8-K - Lantern Pharma Inc. (0001763950) (Filer)",
+        "summary":  "Filed: 2026-05-14 AccNo: 0001493152-26-023200 Size: 1 MB Item 1.01: Entry into a Material Definitive Agreement Item 3.02: Unregistered Sales of Equity Securities Item 8.01: Other Events Item 9.01: Financial Statements and Exhibits",
+        "url":  "https://www.sec.gov/Archives/edgar/data/1763950/000149315226023200/0001493152-26-023200-index.htm",
+        "author":  "",
+        "published":  "2026-05-14T21:26:31Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  null,
+        "meta":  {
+                     "filing_type":  "8-K"
+                 }
+    },
+    {
+        "id":  "sec-edgar-e16145d16d3ba564",
+        "source_id":  "sec-edgar",
+        "title":  "8-K - Pacific Oak Strategic Opportunity REIT, Inc. (0001452936) (Filer)",
+        "summary":  "Filed: 2026-05-14 AccNo: 0001452936-26-000026 Size: 68 MB Item 1.01: Entry into a Material Definitive Agreement Item 2.03: Creation of a Direct Financial Obligation or an Obligation under an Off-Balance Sheet Arrangement of a Registrant Item 5.02: Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers: Compensatory Arrangements of Certain Officers Item 9",
+        "url":  "https://www.sec.gov/Archives/edgar/data/1452936/000145293626000026/0001452936-26-000026-index.htm",
+        "author":  "",
+        "published":  "2026-05-14T21:26:25Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  null,
+        "meta":  {
+                     "filing_type":  "8-K"
+                 }
+    },
+    {
+        "id":  "sec-edgar-c5a42d70bb5fae9f",
+        "source_id":  "sec-edgar",
+        "title":  "8-K - GYRE THERAPEUTICS, INC. (0001124105) (Filer)",
+        "summary":  "Filed: 2026-05-14 AccNo: 0001140361-26-021360 Size: 4 MB Item 7.01: Regulation FD Disclosure Item 9.01: Financial Statements and Exhibits",
+        "url":  "https://www.sec.gov/Archives/edgar/data/1124105/000114036126021360/0001140361-26-021360-index.htm",
+        "author":  "",
+        "published":  "2026-05-14T21:25:34Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  null,
+        "meta":  {
+                     "filing_type":  "8-K"
+                 }
+    },
+    {
+        "id":  "sec-edgar-57852d455f366262",
+        "source_id":  "sec-edgar",
+        "title":  "8-K - INSIGHT ENTERPRISES INC (0000932696) (Filer)",
+        "summary":  "Filed: 2026-05-14 AccNo: 0000932696-26-000057 Size: 2 MB Item 5.03: Amendments to Articles of Incorporation or Bylaws; Change in Fiscal Year Item 5.07: Submission of Matters to a Vote of Security Holders Item 9.01: Financial Statements and Exhibits",
+        "url":  "https://www.sec.gov/Archives/edgar/data/932696/000093269626000057/0000932696-26-000057-index.htm",
+        "author":  "",
+        "published":  "2026-05-14T21:23:31Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  null,
+        "meta":  {
+                     "filing_type":  "8-K"
+                 }
+    },
+    {
+        "id":  "sec-edgar-25de9618b4ce1e42",
+        "source_id":  "sec-edgar",
+        "title":  "8-K - Infleqtion, Inc. (0002007825) (Filer)",
+        "summary":  "Filed: 2026-05-14 AccNo: 0001193125-26-224350 Size: 347 KB Item 2.02: Results of Operations and Financial Condition Item 9.01: Financial Statements and Exhibits",
+        "url":  "https://www.sec.gov/Archives/edgar/data/2007825/000119312526224350/0001193125-26-224350-index.htm",
+        "author":  "",
+        "published":  "2026-05-14T21:23:26Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  null,
+        "meta":  {
+                     "filing_type":  "8-K"
+                 }
+    },
+    {
+        "id":  "sec-edgar-132066f13c4b57b7",
+        "source_id":  "sec-edgar",
+        "title":  "8-K - RING ENERGY, INC. (0001384195) (Filer)",
+        "summary":  "Filed: 2026-05-14 AccNo: 0001628280-26-035219 Size: 477 KB Item 8.01: Other Events Item 9.01: Financial Statements and Exhibits",
+        "url":  "https://www.sec.gov/Archives/edgar/data/1384195/000162828026035219/0001628280-26-035219-index.htm",
+        "author":  "",
+        "published":  "2026-05-14T21:22:22Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  null,
+        "meta":  {
+                     "filing_type":  "8-K"
+                 }
+    },
+    {
+        "id":  "sec-edgar-c3f0db0a2328efb8",
+        "source_id":  "sec-edgar",
+        "title":  "8-K - Polar Power, Inc. (0001622345) (Filer)",
+        "summary":  "Filed: 2026-05-14 AccNo: 0001493152-26-023191 Size: 455 KB Item 1.01: Entry into a Material Definitive Agreement Item 2.03: Creation of a Direct Financial Obligation or an Obligation under an Off-Balance Sheet Arrangement of a Registrant Item 5.02: Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers: Compensatory Arrangements of Certain Officers Item ",
+        "url":  "https://www.sec.gov/Archives/edgar/data/1622345/000149315226023191/0001493152-26-023191-index.htm",
+        "author":  "",
+        "published":  "2026-05-14T21:21:18Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  null,
+        "meta":  {
+                     "filing_type":  "8-K"
+                 }
+    },
+    {
+        "id":  "sec-edgar-5ac8cd16c244b107",
+        "source_id":  "sec-edgar",
+        "title":  "8-K - Red Cat Holdings, Inc. (0000748268) (Filer)",
+        "summary":  "Filed: 2026-05-14 AccNo: 0001104659-26-061333 Size: 572 KB Item 1.01: Entry into a Material Definitive Agreement Item 8.01: Other Events Item 9.01: Financial Statements and Exhibits",
+        "url":  "https://www.sec.gov/Archives/edgar/data/748268/000110465926061333/0001104659-26-061333-index.htm",
+        "author":  "",
+        "published":  "2026-05-14T21:20:47Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  null,
+        "meta":  {
+                     "filing_type":  "8-K"
+                 }
+    },
+    {
+        "id":  "sec-edgar-184cef24ca0f0bf5",
+        "source_id":  "sec-edgar",
+        "title":  "8-K - CSG SYSTEMS INTERNATIONAL INC (0001005757) (Filer)",
+        "summary":  "Filed: 2026-05-14 AccNo: 0001193125-26-224339 Size: 336 KB Item 1.01: Entry into a Material Definitive Agreement Item 1.02: Termination of a Material Definitive Agreement Item 2.01: Completion of Acquisition or Disposition of Assets Item 2.04: Triggering Events That Accelerate or Increase a Direct Financial Obligation or an Obligation under an Off-Balance Sheet Arrangement Item 3.01: Notice of Del",
+        "url":  "https://www.sec.gov/Archives/edgar/data/1005757/000119312526224339/0001193125-26-224339-index.htm",
+        "author":  "",
+        "published":  "2026-05-14T21:19:48Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  null,
+        "meta":  {
+                     "filing_type":  "8-K"
+                 }
+    },
+    {
+        "id":  "sec-edgar-c2adbc55b618c522",
+        "source_id":  "sec-edgar",
+        "title":  "8-K - Kennedy-Wilson Holdings, Inc. (0001408100) (Filer)",
+        "summary":  "Filed: 2026-05-14 AccNo: 0001193125-26-224332 Size: 189 KB Item 8.01: Other Events Item 9.01: Financial Statements and Exhibits",
+        "url":  "https://www.sec.gov/Archives/edgar/data/1408100/000119312526224332/0001193125-26-224332-index.htm",
+        "author":  "",
+        "published":  "2026-05-14T21:18:02Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  null,
+        "meta":  {
+                     "filing_type":  "8-K"
+                 }
+    },
+    {
+        "id":  "sec-edgar-d3a8c5a747c5ee9a",
+        "source_id":  "sec-edgar",
+        "title":  "8-K - CEL SCI CORP (0000725363) (Filer)",
+        "summary":  "Filed: 2026-05-14 AccNo: 0001654954-26-004910 Size: 202 KB Item 1.01: Entry into a Material Definitive Agreement Item 9.01: Financial Statements and Exhibits",
+        "url":  "https://www.sec.gov/Archives/edgar/data/725363/000165495426004910/0001654954-26-004910-index.htm",
+        "author":  "",
+        "published":  "2026-05-14T21:16:25Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  null,
+        "meta":  {
+                     "filing_type":  "8-K"
+                 }
+    },
+    {
+        "id":  "sec-edgar-0533691fa792aed6",
+        "source_id":  "sec-edgar",
+        "title":  "8-K - Cantor Equity Partners I, Inc. (0002027708) (Filer)",
+        "summary":  "Filed: 2026-05-14 AccNo: 0001213900-26-056828 Size: 211 KB Item 8.01: Other Events",
+        "url":  "https://www.sec.gov/Archives/edgar/data/2027708/000121390026056828/0001213900-26-056828-index.htm",
+        "author":  "",
+        "published":  "2026-05-14T21:16:16Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  null,
+        "meta":  {
+                     "filing_type":  "8-K"
+                 }
+    },
+    {
+        "id":  "sec-edgar-fd1dad4b4e7192b9",
+        "source_id":  "sec-edgar",
+        "title":  "8-K - CH4 Natural Solutions Corp (0002044817) (Filer)",
+        "summary":  "Filed: 2026-05-14 AccNo: 0001193125-26-224328 Size: 260 KB Item 8.01: Other Events Item 9.01: Financial Statements and Exhibits",
+        "url":  "https://www.sec.gov/Archives/edgar/data/2044817/000119312526224328/0001193125-26-224328-index.htm",
+        "author":  "",
+        "published":  "2026-05-14T21:16:08Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  null,
+        "meta":  {
+                     "filing_type":  "8-K"
+                 }
+    },
+    {
+        "id":  "sec-edgar-0e05a9eb9d2156fa",
+        "source_id":  "sec-edgar",
+        "title":  "8-K - Rhinebeck Bancorp, Inc. (0001751783) (Filer)",
+        "summary":  "Filed: 2026-05-14 AccNo: 0001104659-26-061328 Size: 470 KB Item 1.01: Entry into a Material Definitive Agreement Item 9.01: Financial Statements and Exhibits",
+        "url":  "https://www.sec.gov/Archives/edgar/data/1751783/000110465926061328/0001104659-26-061328-index.htm",
+        "author":  "",
+        "published":  "2026-05-14T21:16:01Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  null,
+        "meta":  {
+                     "filing_type":  "8-K"
+                 }
+    },
+    {
+        "id":  "sec-edgar-de1ca3034a86055f",
+        "source_id":  "sec-edgar",
+        "title":  "8-K - CARRIAGE SERVICES INC (0001016281) (Filer)",
+        "summary":  "Filed: 2026-05-14 AccNo: 0001016281-26-000039 Size: 165 KB Item 5.07: Submission of Matters to a Vote of Security Holders Item 9.01: Financial Statements and Exhibits",
+        "url":  "https://www.sec.gov/Archives/edgar/data/1016281/000101628126000039/0001016281-26-000039-index.htm",
+        "author":  "",
+        "published":  "2026-05-14T21:15:05Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  null,
+        "meta":  {
+                     "filing_type":  "8-K"
+                 }
+    }
+]

@@ -7,6 +7,7 @@
  */
 
 import type { WsEvent, WsEventType } from "./types";
+import { mockSocket } from "./mock";
 
 export type WsStatus = "connecting" | "open" | "closed";
 type Listener = (event: WsEvent) => void;
@@ -101,4 +102,11 @@ class HelmSocket {
 }
 
 /** Process-wide singleton — call `helmSocket.connect()` once in `App`. */
-export const helmSocket = new HelmSocket();
+const realHelmSocket = new HelmSocket();
+
+/**
+ * In a `VITE_DEMO=1` build the real WebSocket has no server to talk to —
+ * swap in the simulator-backed mock, which satisfies the same interface.
+ */
+export const helmSocket =
+  import.meta.env.VITE_DEMO === "1" ? mockSocket : realHelmSocket;

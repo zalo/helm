@@ -18,6 +18,7 @@ import type {
   PortfolioSnapshot,
   Position,
 } from "./types";
+import { mockApi } from "./mock";
 
 const BASE = "/api";
 
@@ -49,7 +50,7 @@ function qs(params: Record<string, string | number | undefined>): string {
   return "?" + entries.map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join("&");
 }
 
-export const api = {
+const realApi = {
   health: () => request<HealthResponse>("/health"),
 
   // --- trading ---
@@ -76,5 +77,11 @@ export const api = {
     request<FeedItem[]>(`/feeds/${encodeURIComponent(sourceId)}${qs(params)}`),
   oembed: (url: string) => request<OEmbedResponse>(`/feeds/oembed${qs({ url })}`),
 };
+
+/**
+ * In a `VITE_DEMO=1` build there is no backend — swap in the in-process
+ * simulator-backed mock. Consumers import `api` unchanged either way.
+ */
+export const api = import.meta.env.VITE_DEMO === "1" ? mockApi : realApi;
 
 export { ApiError };

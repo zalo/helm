@@ -1,0 +1,482 @@
+﻿[
+    {
+        "id":  "fear-greed-128ea060986bf901",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 43 â Fear",
+        "summary":  "Crypto market sentiment index reading: 43/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-05-15T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  43,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-a8c2ebe7cf5a6bbd",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 34 â Fear",
+        "summary":  "Crypto market sentiment index reading: 34/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-05-14T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  34,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-b8da3164bc7c0596",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 42 â Fear",
+        "summary":  "Crypto market sentiment index reading: 42/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-05-13T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  42,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-71a2db79b7604a51",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 49 â Neutral",
+        "summary":  "Crypto market sentiment index reading: 49/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-05-12T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "value":  49,
+                     "classification":  "Neutral"
+                 }
+    },
+    {
+        "id":  "fear-greed-51a78d2e0faacf94",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 48 â Neutral",
+        "summary":  "Crypto market sentiment index reading: 48/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-05-11T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "value":  48,
+                     "classification":  "Neutral"
+                 }
+    },
+    {
+        "id":  "fear-greed-fb6e9d6033e23247",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 47 â Neutral",
+        "summary":  "Crypto market sentiment index reading: 47/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-05-10T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "value":  47,
+                     "classification":  "Neutral"
+                 }
+    },
+    {
+        "id":  "fear-greed-2a0cff999ea6184a",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 38 â Fear",
+        "summary":  "Crypto market sentiment index reading: 38/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-05-09T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  38,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-943b38261f4ec8bb",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 38 â Fear",
+        "summary":  "Crypto market sentiment index reading: 38/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-05-08T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  38,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-83cc16f90ef17b84",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 47 â Neutral",
+        "summary":  "Crypto market sentiment index reading: 47/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-05-07T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "value":  47,
+                     "classification":  "Neutral"
+                 }
+    },
+    {
+        "id":  "fear-greed-6d3ad397c0b32205",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 46 â Fear",
+        "summary":  "Crypto market sentiment index reading: 46/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-05-06T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "value":  46,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-db903426a8d99ac1",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 50 â Neutral",
+        "summary":  "Crypto market sentiment index reading: 50/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-05-05T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "value":  50,
+                     "classification":  "Neutral"
+                 }
+    },
+    {
+        "id":  "fear-greed-425c9f59a534a088",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 40 â Fear",
+        "summary":  "Crypto market sentiment index reading: 40/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-05-04T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  40,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-89703f61c0700d5f",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 47 â Neutral",
+        "summary":  "Crypto market sentiment index reading: 47/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-05-03T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "value":  47,
+                     "classification":  "Neutral"
+                 }
+    },
+    {
+        "id":  "fear-greed-a56ba397f5ff9d2b",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 39 â Fear",
+        "summary":  "Crypto market sentiment index reading: 39/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-05-02T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  39,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-bb64b0d51313ff55",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 26 â Fear",
+        "summary":  "Crypto market sentiment index reading: 26/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-05-01T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  26,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-02bc4ebaa951dde6",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 29 â Fear",
+        "summary":  "Crypto market sentiment index reading: 29/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-04-30T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  29,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-6a79d6d918bbce06",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 26 â Fear",
+        "summary":  "Crypto market sentiment index reading: 26/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-04-29T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  26,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-6444418c8ca2b7de",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 33 â Fear",
+        "summary":  "Crypto market sentiment index reading: 33/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-04-28T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  33,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-e7bbbef889481ebc",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 47 â Neutral",
+        "summary":  "Crypto market sentiment index reading: 47/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-04-27T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "value":  47,
+                     "classification":  "Neutral"
+                 }
+    },
+    {
+        "id":  "fear-greed-e36c2413b9bb03f6",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 33 â Fear",
+        "summary":  "Crypto market sentiment index reading: 33/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-04-26T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  33,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-0f34bac1cfc5eea6",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 31 â Fear",
+        "summary":  "Crypto market sentiment index reading: 31/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-04-25T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  31,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-32d1d616809a1651",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 39 â Fear",
+        "summary":  "Crypto market sentiment index reading: 39/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-04-24T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  39,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-75a45a01dd73b6cd",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 46 â Fear",
+        "summary":  "Crypto market sentiment index reading: 46/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-04-23T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "value":  46,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-dbf36350ebbeb438",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 32 â Fear",
+        "summary":  "Crypto market sentiment index reading: 32/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-04-22T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  32,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-01f4ff499373cdf2",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 33 â Fear",
+        "summary":  "Crypto market sentiment index reading: 33/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-04-21T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  33,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-acf98b953f06751b",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 29 â Fear",
+        "summary":  "Crypto market sentiment index reading: 29/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-04-20T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  29,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-945020efcc9949b5",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 27 â Fear",
+        "summary":  "Crypto market sentiment index reading: 27/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-04-19T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  27,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-877f63f8885a3b25",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 26 â Fear",
+        "summary":  "Crypto market sentiment index reading: 26/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-04-18T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  26,
+                     "classification":  "Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-3931739ab86e0de0",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 21 â Extreme Fear",
+        "summary":  "Crypto market sentiment index reading: 21/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-04-17T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  21,
+                     "classification":  "Extreme Fear"
+                 }
+    },
+    {
+        "id":  "fear-greed-3a188de991d1a60e",
+        "source_id":  "fear-greed",
+        "title":  "Fear \u0026 Greed: 23 â Extreme Fear",
+        "summary":  "Crypto market sentiment index reading: 23/100.",
+        "url":  "https://alternative.me/crypto/fear-and-greed-index/",
+        "author":  "",
+        "published":  "2026-04-16T00:00:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "value":  23,
+                     "classification":  "Extreme Fear"
+                 }
+    }
+]

@@ -1,0 +1,362 @@
+﻿[
+    {
+        "id":  "hacker-news-f0f71c3b9cb1f387",
+        "source_id":  "hacker-news",
+        "title":  "We built a machine-readable merchant verification layer for AI shopping agents",
+        "summary":  "2 points Â· 0 comments",
+        "url":  "https://github.com/warwickwood-cell/gengeo-agent-registry",
+        "author":  "gengeo-ai",
+        "published":  "2026-05-14T23:52:55Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "points":  2,
+                     "num_comments":  0,
+                     "hn_url":  "https://news.ycombinator.com/item?id=48142781",
+                     "query":  "AI OR semiconductor OR Fed OR crypto"
+                 }
+    },
+    {
+        "id":  "hacker-news-67bc05ca317a4d07",
+        "source_id":  "hacker-news",
+        "title":  "Recursive Self-Improvement Delivers New SOTA Coding Performance",
+        "summary":  "5 points Â· 0 comments",
+        "url":  "https://poetiq.ai/posts/recursive_self_improvement_coding/",
+        "author":  "icodestuff",
+        "published":  "2026-05-14T23:52:09Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "points":  5,
+                     "num_comments":  0,
+                     "hn_url":  "https://news.ycombinator.com/item?id=48142776",
+                     "query":  "AI OR semiconductor OR Fed OR crypto"
+                 }
+    },
+    {
+        "id":  "hacker-news-c1af1f8228b86a80",
+        "source_id":  "hacker-news",
+        "title":  "Raindrop â Local Agent Debugger",
+        "summary":  "1 points Â· 0 comments",
+        "url":  "https://github.com/raindrop-ai/workshop",
+        "author":  "felixbraun",
+        "published":  "2026-05-14T23:38:01Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "points":  1,
+                     "num_comments":  0,
+                     "hn_url":  "https://news.ycombinator.com/item?id=48142655",
+                     "query":  "AI OR semiconductor OR Fed OR crypto"
+                 }
+    },
+    {
+        "id":  "hacker-news-b309c5243815dd57",
+        "source_id":  "hacker-news",
+        "title":  "Sam Altman Is Taking a Lot of Punches on the Witness Stand",
+        "summary":  "2 points Â· 0 comments",
+        "url":  "https://www.motherjones.com/politics/2026/05/altman-musk-openai-lawsuit-witness-questioning-ai/",
+        "author":  "cdrnsf",
+        "published":  "2026-05-14T23:36:42Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "points":  2,
+                     "num_comments":  0,
+                     "hn_url":  "https://news.ycombinator.com/item?id=48142643",
+                     "query":  "AI OR semiconductor OR Fed OR crypto"
+                 }
+    },
+    {
+        "id":  "hacker-news-d44fed8ac1bd8e7c",
+        "source_id":  "hacker-news",
+        "title":  "Have a Coherent AI Policy",
+        "summary":  "4 points Â· 0 comments",
+        "url":  "https://brianmeeker.me/2026/05/14/have-a-coherent-ai-policy/",
+        "author":  "ai_critic",
+        "published":  "2026-05-14T23:24:45Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "points":  4,
+                     "num_comments":  0,
+                     "hn_url":  "https://news.ycombinator.com/item?id=48142553",
+                     "query":  "AI OR semiconductor OR Fed OR crypto"
+                 }
+    },
+    {
+        "id":  "hacker-news-ec5214712a11d8e6",
+        "source_id":  "hacker-news",
+        "title":  "Shareable AI Editable Visualizations",
+        "summary":  "2 points Â· 0 comments",
+        "url":  "https://framejs.io/docs/intro.html",
+        "author":  "dionjw",
+        "published":  "2026-05-14T23:23:32Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "points":  2,
+                     "num_comments":  0,
+                     "hn_url":  "https://news.ycombinator.com/item?id=48142545",
+                     "query":  "AI OR semiconductor OR Fed OR crypto"
+                 }
+    },
+    {
+        "id":  "hacker-news-60cef9e2b527ffc9",
+        "source_id":  "hacker-news",
+        "title":  "A Professor in Every Pocket â A New Framework for Higher Education",
+        "summary":  "2 points Â· 0 comments",
+        "url":  "https://lagomor.ph/2026/01/a-professor-in-every-pocket/",
+        "author":  "ChilledTonic",
+        "published":  "2026-05-14T23:11:43Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "points":  2,
+                     "num_comments":  0,
+                     "hn_url":  "https://news.ycombinator.com/item?id=48142461",
+                     "query":  "AI OR semiconductor OR Fed OR crypto"
+                 }
+    },
+    {
+        "id":  "hacker-news-7cad57c30f3d5718",
+        "source_id":  "hacker-news",
+        "title":  "AI to infest eight in ten premium phones within two years",
+        "summary":  "2 points Â· 0 comments",
+        "url":  "https://www.theregister.com/personal-tech/2026/05/14/ai-to-infest-eight-in-ten-premium-phones-within-two-years/5240393",
+        "author":  "Bender",
+        "published":  "2026-05-14T22:56:35Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "points":  2,
+                     "num_comments":  0,
+                     "hn_url":  "https://news.ycombinator.com/item?id=48142357",
+                     "query":  "AI OR semiconductor OR Fed OR crypto"
+                 }
+    },
+    {
+        "id":  "hacker-news-3173260b7b8428f3",
+        "source_id":  "hacker-news",
+        "title":  "Encountering the roots of mathematics",
+        "summary":  "1 points Â· 0 comments",
+        "url":  "https://www.ias.edu/ideas/encountering-roots-mathematics",
+        "author":  "hhs",
+        "published":  "2026-05-14T22:53:56Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "points":  1,
+                     "num_comments":  0,
+                     "hn_url":  "https://news.ycombinator.com/item?id=48142340",
+                     "query":  "AI OR semiconductor OR Fed OR crypto"
+                 }
+    },
+    {
+        "id":  "hacker-news-d8fe5b03ce49d9c8",
+        "source_id":  "hacker-news",
+        "title":  "AI Poop Analysis App Offered to Sell Me Database of Its Users\u0027 Poops",
+        "summary":  "2 points Â· 0 comments",
+        "url":  "https://www.404media.co/ai-poop-analysis-app-offered-to-sell-me-access-to-its-users-poops/",
+        "author":  "Cider9986",
+        "published":  "2026-05-14T22:51:02Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "points":  2,
+                     "num_comments":  0,
+                     "hn_url":  "https://news.ycombinator.com/item?id=48142314",
+                     "query":  "AI OR semiconductor OR Fed OR crypto"
+                 }
+    },
+    {
+        "id":  "hacker-news-e6353f08b5b82dde",
+        "source_id":  "hacker-news",
+        "title":  "Do deep learning models recognize 3D shapes in the same way humans do?",
+        "summary":  "1 points Â· 0 comments",
+        "url":  "https://www.santafe.edu/news-center/news/do-deep-learning-models-recognize-3d-shapes-in-the-same-way-humans-do",
+        "author":  "hhs",
+        "published":  "2026-05-14T22:48:23Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "points":  1,
+                     "num_comments":  0,
+                     "hn_url":  "https://news.ycombinator.com/item?id=48142290",
+                     "query":  "AI OR semiconductor OR Fed OR crypto"
+                 }
+    },
+    {
+        "id":  "hacker-news-0e58ba86b59b589a",
+        "source_id":  "hacker-news",
+        "title":  "AI #168: Not Leading the Future",
+        "summary":  "2 points Â· 0 comments",
+        "url":  "https://thezvi.substack.com/p/ai-168-not-leading-the-future",
+        "author":  "paulpauper",
+        "published":  "2026-05-14T22:46:22Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "points":  2,
+                     "num_comments":  0,
+                     "hn_url":  "https://news.ycombinator.com/item?id=48142269",
+                     "query":  "AI OR semiconductor OR Fed OR crypto"
+                 }
+    },
+    {
+        "id":  "hacker-news-4fb1e21a26318860",
+        "source_id":  "hacker-news",
+        "title":  "Automated red teaming with RL: attacker-defender co-training",
+        "summary":  "4 points Â· 1 comments",
+        "url":  "https://castform.com/blog/red-team-rl/",
+        "author":  "ClassifexRL",
+        "published":  "2026-05-14T22:42:21Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "points":  4,
+                     "num_comments":  1,
+                     "hn_url":  "https://news.ycombinator.com/item?id=48142232",
+                     "query":  "AI OR semiconductor OR Fed OR crypto"
+                 }
+    },
+    {
+        "id":  "hacker-news-17e88a997a9d6e80",
+        "source_id":  "hacker-news",
+        "title":  "More than half of U.S. faces worst drought in decades",
+        "summary":  "41 points Â· 5 comments",
+        "url":  "https://news.vt.edu/articles/2026/05/drought-united-states-la-nina-expert.html",
+        "author":  "littlexsparkee",
+        "published":  "2026-05-14T22:38:18Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "points":  41,
+                     "num_comments":  5,
+                     "hn_url":  "https://news.ycombinator.com/item?id=48142193",
+                     "query":  "AI OR semiconductor OR Fed OR crypto"
+                 }
+    },
+    {
+        "id":  "hacker-news-868dde93c4130ea0",
+        "source_id":  "hacker-news",
+        "title":  "Ontario auditors find doctors\u0027 AI note takers routinely blow basic facts",
+        "summary":  "39 points Â· 7 comments",
+        "url":  "https://www.theregister.com/ai-ml/2026/05/14/ontario-auditors-find-doctors-ai-note-takers-routinely-blow-basic-facts/5240771",
+        "author":  "sohkamyung",
+        "published":  "2026-05-14T22:37:40Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "points":  39,
+                     "num_comments":  7,
+                     "hn_url":  "https://news.ycombinator.com/item?id=48142188",
+                     "query":  "AI OR semiconductor OR Fed OR crypto"
+                 }
+    },
+    {
+        "id":  "hacker-news-c5c96488b95eb12d",
+        "source_id":  "hacker-news",
+        "title":  "We replaced Redis with MySQL for inventory reservationsâand it scaled",
+        "summary":  "3 points Â· 0 comments",
+        "url":  "https://shopify.engineering/scaling-inventory-reservations",
+        "author":  "gmcabrita",
+        "published":  "2026-05-14T22:35:26Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "points":  3,
+                     "num_comments":  0,
+                     "hn_url":  "https://news.ycombinator.com/item?id=48142160",
+                     "query":  "AI OR semiconductor OR Fed OR crypto"
+                 }
+    },
+    {
+        "id":  "hacker-news-b2d4eea3b2e6390f",
+        "source_id":  "hacker-news",
+        "title":  "Show HN: Parse LLM Markdown streams incrementally on the server or client",
+        "summary":  "2 points Â· 1 comments",
+        "url":  "https://github.com/nimeshnayaju/markdown-parser",
+        "author":  "nayajunimesh",
+        "published":  "2026-05-14T22:31:00Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "points":  2,
+                     "num_comments":  1,
+                     "hn_url":  "https://news.ycombinator.com/item?id=48142119",
+                     "query":  "AI OR semiconductor OR Fed OR crypto"
+                 }
+    },
+    {
+        "id":  "hacker-news-200104cb9f7ef2d9",
+        "source_id":  "hacker-news",
+        "title":  "A few words on DS4",
+        "summary":  "61 points Â· 16 comments",
+        "url":  "https://antirez.com/news/165",
+        "author":  "caust1c",
+        "published":  "2026-05-14T22:29:12Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "points":  61,
+                     "num_comments":  16,
+                     "hn_url":  "https://news.ycombinator.com/item?id=48142108",
+                     "query":  "AI OR semiconductor OR Fed OR crypto"
+                 }
+    },
+    {
+        "id":  "hacker-news-eb3882bb40f768d7",
+        "source_id":  "hacker-news",
+        "title":  "\u0027Nessun Dorma\u0027: The Story Behind Pavarotti\u0027s Aria",
+        "summary":  "2 points Â· 0 comments",
+        "url":  "https://www.udiscovermusic.com/classical-features/nessun-dorma-pavarotti/",
+        "author":  "austinallegro",
+        "published":  "2026-05-14T22:22:34Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "points":  2,
+                     "num_comments":  0,
+                     "hn_url":  "https://news.ycombinator.com/item?id=48142054",
+                     "query":  "AI OR semiconductor OR Fed OR crypto"
+                 }
+    },
+    {
+        "id":  "hacker-news-96831f5b2e640767",
+        "source_id":  "hacker-news",
+        "title":  "Vouch-compatible PR-spam reduction GitHub Action workflow and CLI tool",
+        "summary":  "3 points Â· 0 comments",
+        "url":  "https://github.com/PThorpe92/fossier",
+        "author":  "ellieh",
+        "published":  "2026-05-14T22:17:08Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "neutral",
+        "meta":  {
+                     "points":  3,
+                     "num_comments":  0,
+                     "hn_url":  "https://news.ycombinator.com/item?id=48142003",
+                     "query":  "AI OR semiconductor OR Fed OR crypto"
+                 }
+    }
+]

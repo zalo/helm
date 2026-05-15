@@ -1,0 +1,202 @@
+﻿[
+    {
+        "id":  "congress-trades-45413812b76544ef",
+        "source_id":  "congress-trades",
+        "title":  "Rep. Marjorie Greene purchase NVDA",
+        "summary":  "$50,001 - $100,000",
+        "url":  "",
+        "author":  "Rep. Marjorie Greene",
+        "published":  "2026-05-11T00:03:24.030621Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bullish",
+        "meta":  {
+                     "ticker":  "NVDA",
+                     "type":  "purchase",
+                     "amount":  "$50,001 - $100,000",
+                     "chamber":  "house",
+                     "transaction_date":  "2026-05-11",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "congress-trades-de8ff1e9d05297d8",
+        "source_id":  "congress-trades",
+        "title":  "Rep. Nancy Pelosi sale GOOGL",
+        "summary":  "$1,000,001 - $5,000,000",
+        "url":  "",
+        "author":  "Rep. Nancy Pelosi",
+        "published":  "2026-05-09T00:03:24.030621Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "ticker":  "GOOGL",
+                     "type":  "sale",
+                     "amount":  "$1,000,001 - $5,000,000",
+                     "chamber":  "house",
+                     "transaction_date":  "2026-05-09",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "congress-trades-c11823b5d08ddc92",
+        "source_id":  "congress-trades",
+        "title":  "Rep. Dan Crenshaw purchase XOM",
+        "summary":  "$15,001 - $50,000",
+        "url":  "",
+        "author":  "Rep. Dan Crenshaw",
+        "published":  "2026-05-07T00:03:24.030621Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bullish",
+        "meta":  {
+                     "ticker":  "XOM",
+                     "type":  "purchase",
+                     "amount":  "$15,001 - $50,000",
+                     "chamber":  "house",
+                     "transaction_date":  "2026-05-07",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "congress-trades-2e4c9a4a58bc1d08",
+        "source_id":  "congress-trades",
+        "title":  "Rep. Josh Gottheimer purchase MSFT",
+        "summary":  "$1,001 - $15,000",
+        "url":  "",
+        "author":  "Rep. Josh Gottheimer",
+        "published":  "2026-05-06T00:03:24.030621Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bullish",
+        "meta":  {
+                     "ticker":  "MSFT",
+                     "type":  "purchase",
+                     "amount":  "$1,001 - $15,000",
+                     "chamber":  "house",
+                     "transaction_date":  "2026-05-06",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "congress-trades-8018bae9b1026f39",
+        "source_id":  "congress-trades",
+        "title":  "Rep. Ro Khanna sale AAPL",
+        "summary":  "$1,001 - $15,000",
+        "url":  "",
+        "author":  "Rep. Ro Khanna",
+        "published":  "2026-05-04T00:03:24.030621Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "ticker":  "AAPL",
+                     "type":  "sale",
+                     "amount":  "$1,001 - $15,000",
+                     "chamber":  "house",
+                     "transaction_date":  "2026-05-04",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "congress-trades-7001e638acb89f48",
+        "source_id":  "congress-trades",
+        "title":  "Rep. Michael McCaul purchase AMD",
+        "summary":  "$100,001 - $250,000",
+        "url":  "",
+        "author":  "Rep. Michael McCaul",
+        "published":  "2026-05-02T00:03:24.030621Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bullish",
+        "meta":  {
+                     "ticker":  "AMD",
+                     "type":  "purchase",
+                     "amount":  "$100,001 - $250,000",
+                     "chamber":  "house",
+                     "transaction_date":  "2026-05-02",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "congress-trades-eda915b807efc609",
+        "source_id":  "congress-trades",
+        "title":  "Rep. Kathy Manning sale JPM",
+        "summary":  "$15,001 - $50,000",
+        "url":  "",
+        "author":  "Rep. Kathy Manning",
+        "published":  "2026-04-30T00:03:24.030621Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "ticker":  "JPM",
+                     "type":  "sale",
+                     "amount":  "$15,001 - $50,000",
+                     "chamber":  "house",
+                     "transaction_date":  "2026-04-30",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "congress-trades-b717945b9dffc19d",
+        "source_id":  "congress-trades",
+        "title":  "Rep. Mark Green purchase TSLA",
+        "summary":  "$15,001 - $50,000",
+        "url":  "",
+        "author":  "Rep. Mark Green",
+        "published":  "2026-04-28T00:03:24.030621Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bullish",
+        "meta":  {
+                     "ticker":  "TSLA",
+                     "type":  "purchase",
+                     "amount":  "$15,001 - $50,000",
+                     "chamber":  "house",
+                     "transaction_date":  "2026-04-28",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "congress-trades-988c04712effc70e",
+        "source_id":  "congress-trades",
+        "title":  "Rep. Earl Blumenauer purchase COST",
+        "summary":  "$1,001 - $15,000",
+        "url":  "",
+        "author":  "Rep. Earl Blumenauer",
+        "published":  "2026-04-25T00:03:24.030621Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bullish",
+        "meta":  {
+                     "ticker":  "COST",
+                     "type":  "purchase",
+                     "amount":  "$1,001 - $15,000",
+                     "chamber":  "house",
+                     "transaction_date":  "2026-04-25",
+                     "curated":  true
+                 }
+    },
+    {
+        "id":  "congress-trades-a0854232cf561769",
+        "source_id":  "congress-trades",
+        "title":  "Rep. Garret Graves sale CVX",
+        "summary":  "$50,001 - $100,000",
+        "url":  "",
+        "author":  "Rep. Garret Graves",
+        "published":  "2026-04-22T00:03:24.030621Z",
+        "image":  null,
+        "html":  null,
+        "sentiment":  "bearish",
+        "meta":  {
+                     "ticker":  "CVX",
+                     "type":  "sale",
+                     "amount":  "$50,001 - $100,000",
+                     "chamber":  "house",
+                     "transaction_date":  "2026-04-22",
+                     "curated":  true
+                 }
+    }
+]

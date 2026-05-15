@@ -1,0 +1,15 @@
+﻿{
+    "id":  "discord-a9b8f49c844f21a0",
+    "source_id":  "discord",
+    "title":  "Feed temporarily unavailable",
+    "summary":  "Provide a guild_id (and optionally channel_id).",
+    "url":  "",
+    "author":  "",
+    "published":  null,
+    "image":  null,
+    "html":  null,
+    "sentiment":  "neutral",
+    "meta":  {
+                 "error":  true
+             }
+}
