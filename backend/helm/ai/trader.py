@@ -62,14 +62,25 @@ def build_ai_trader_strategy(
 
         # -- lifecycle ------------------------------------------------------
         def on_start(self) -> None:  # noqa: D401 - Nautilus hook
+            from datetime import datetime, timedelta, timezone
+
+            from helm.config import bar_type_str
+
+            # Seed ~300 bars of history so MarketState has a series to evaluate.
+            # IB will trim to RTH-available data automatically.
+            start = datetime.now(timezone.utc) - timedelta(hours=6)
             for instrument_id in self._instrument_ids:
                 try:
                     from nautilus_trader.model.data import BarType
 
-                    bar_type = BarType.from_str(
-                        f"{instrument_id}-1-MINUTE-LAST-INTERNAL"
-                    )
-                    self.request_bars(bar_type)
+                    bar_type = BarType.from_str(bar_type_str(instrument_id))
+                    try:
+                        self.request_bars(bar_type, start=start)
+                    except Exception:
+                        log.debug(
+                            "AITrader: request_bars failed for %s", instrument_id,
+                            exc_info=True,
+                        )
                     self.subscribe_bars(bar_type)
                 except Exception:  # pragma: no cover - defensive
                     log.debug("AITrader: could not subscribe bars for %s", instrument_id)
@@ -112,9 +123,9 @@ def build_ai_trader_strategy(
                 try:
                     from nautilus_trader.model.data import BarType
 
-                    bar_type = BarType.from_str(
-                        f"{instrument_id}-1-MINUTE-LAST-INTERNAL"
-                    )
+                    from helm.config import bar_type_str
+
+                    bar_type = BarType.from_str(bar_type_str(instrument_id))
                     cached = self.cache.bars(bar_type)
                 except Exception:
                     cached = []

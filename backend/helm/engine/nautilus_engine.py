@@ -253,10 +253,17 @@ class NautilusEngine(BaseEngine):
             TradingNodeConfig,
         )
         from nautilus_trader.live.node import TradingNode
-        from nautilus_trader.model.identifiers import TraderId
+        from nautilus_trader.model.identifiers import InstrumentId, TraderId
 
         from helm.ai.trader import build_ai_trader_strategy
         from helm.engine.bridge_actor import build_bridge_actor
+
+        # Resolve configured instrument ids up front so adapter instrument
+        # providers can load them on connect.
+        instrument_ids: list[Any] = []
+        for spec in self.settings.instruments:
+            with contextlib.suppress(Exception):
+                instrument_ids.append(InstrumentId.from_str(spec))
 
         data_clients: dict[str, Any] = {}
         exec_clients: dict[str, Any] = {}
@@ -292,6 +299,72 @@ class NautilusEngine(BaseEngine):
         else:
             self._binance_factories = None
 
+        # Wire Interactive Brokers when an account_id is configured. TWS/IBG
+        # must already be running on (ib_host, ib_port).
+        self._ib_factories = None
+        if self.settings.ib_account_id:
+            try:
+                from ibapi.common import MarketDataTypeEnum as IBMarketDataTypeEnum
+                from nautilus_trader.adapters.interactive_brokers.config import (
+                    InteractiveBrokersDataClientConfig,
+                    InteractiveBrokersExecClientConfig,
+                    InteractiveBrokersInstrumentProviderConfig,
+                )
+                from nautilus_trader.adapters.interactive_brokers.factories import (
+                    InteractiveBrokersLiveDataClientFactory,
+                    InteractiveBrokersLiveExecClientFactory,
+                )
+
+                # Only IB-routable venues belong in the IB provider's load_ids.
+                # Crypto-only venues (Binance) and synthetic SIM venues are skipped.
+                _NON_IB_VENUES = {"BINANCE", "SIM"}
+                ib_load_ids = frozenset(
+                    iid for iid in instrument_ids
+                    if str(iid.venue) not in _NON_IB_VENUES
+                )
+                ib_provider = InteractiveBrokersInstrumentProviderConfig(
+                    load_ids=ib_load_ids if ib_load_ids else None,
+                )
+
+                # Map HELM_IB_MARKET_DATA_TYPE → ibapi enum int. Unknown values
+                # fall back to REALTIME (also Nautilus's default).
+                _MD_TYPE_MAP = {
+                    "realtime": IBMarketDataTypeEnum.REALTIME,
+                    "frozen": IBMarketDataTypeEnum.FROZEN,
+                    "delayed": IBMarketDataTypeEnum.DELAYED,
+                    "delayed_frozen": IBMarketDataTypeEnum.DELAYED_FROZEN,
+                }
+                ib_md_type = _MD_TYPE_MAP.get(
+                    self.settings.ib_market_data_type.strip().lower(),
+                    IBMarketDataTypeEnum.REALTIME,
+                )
+
+                data_clients["INTERACTIVE_BROKERS"] = (
+                    InteractiveBrokersDataClientConfig(
+                        ibg_host=self.settings.ib_host,
+                        ibg_port=self.settings.ib_port,
+                        ibg_client_id=self.settings.ib_client_id,
+                        instrument_provider=ib_provider,
+                        market_data_type=ib_md_type,
+                    )
+                )
+                exec_clients["INTERACTIVE_BROKERS"] = (
+                    InteractiveBrokersExecClientConfig(
+                        ibg_host=self.settings.ib_host,
+                        ibg_port=self.settings.ib_port,
+                        ibg_client_id=self.settings.ib_client_id,
+                        account_id=self.settings.ib_account_id,
+                        instrument_provider=ib_provider,
+                    )
+                )
+                self._ib_factories = (
+                    InteractiveBrokersLiveDataClientFactory,
+                    InteractiveBrokersLiveExecClientFactory,
+                )
+            except Exception:  # pragma: no cover - adapter optional
+                log.exception("IB adapter unavailable; running node without IB.")
+                self._ib_factories = None
+
         config = TradingNodeConfig(
             trader_id=TraderId(self.settings.trader_id),
             logging=LoggingConfig(log_level="INFO"),
@@ -307,14 +380,11 @@ class NautilusEngine(BaseEngine):
             with contextlib.suppress(Exception):
                 node.add_data_client_factory("BINANCE", data_factory)
                 node.add_exec_client_factory("BINANCE", exec_factory)
-
-        # Resolve configured instrument ids.
-        from nautilus_trader.model.identifiers import InstrumentId
-
-        instrument_ids: list[Any] = []
-        for spec in self.settings.instruments:
+        if self._ib_factories is not None:
+            data_factory, exec_factory = self._ib_factories
             with contextlib.suppress(Exception):
-                instrument_ids.append(InstrumentId.from_str(spec))
+                node.add_data_client_factory("INTERACTIVE_BROKERS", data_factory)
+                node.add_exec_client_factory("INTERACTIVE_BROKERS", exec_factory)
 
         # Register the bridge actor + AI trader strategy.
         with contextlib.suppress(Exception):
@@ -490,7 +560,9 @@ class NautilusEngine(BaseEngine):
         with contextlib.suppress(Exception):
             from nautilus_trader.model.data import BarType
 
-            bar_type = BarType.from_str(f"{instrument}-1-MINUTE-LAST-INTERNAL")
+            from helm.config import bar_type_str
+
+            bar_type = BarType.from_str(bar_type_str(instrument))
             raw_bars = cache.bars(bar_type)
             # cache.bars() returns newest-first; reverse to oldest-first.
             for raw in reversed(list(raw_bars)[:count]):

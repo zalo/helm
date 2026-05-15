@@ -11,9 +11,10 @@ export default defineConfig({
     alias: { "@": path.resolve(__dirname, "src") },
   },
   server: {
+    host: true,
     port: 5173,
-    // Allow Cloudflare quick-tunnel hostnames so the demo can be exposed publicly.
-    allowedHosts: [".trycloudflare.com"],
+    // `.trycloudflare.com` for Cloudflare quick-tunnels; `.ts.net` for Tailscale MagicDNS.
+    allowedHosts: [".trycloudflare.com", ".ts.net"],
     proxy: {
       "/api": { target: "http://localhost:8000", changeOrigin: true },
       "/ws": { target: "ws://localhost:8000", ws: true },

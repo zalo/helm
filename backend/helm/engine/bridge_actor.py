@@ -75,7 +75,9 @@ def build_bridge_actor(events: EventBroadcaster, instrument_ids: list[Any] | Non
                         continue
                     from nautilus_trader.model.data import BarType
 
-                    bar_type = BarType.from_str(f"{instrument_id}-1-MINUTE-LAST-INTERNAL")
+                    from helm.config import bar_type_str
+
+                    bar_type = BarType.from_str(bar_type_str(instrument_id))
                     self.subscribe_bars(bar_type)
                 except Exception:  # pragma: no cover - defensive
                     log.debug("BridgeActor: could not subscribe bars for %s", instrument_id)

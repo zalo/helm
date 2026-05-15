@@ -52,6 +52,20 @@ class Settings(BaseSettings):
     ib_host: str = "127.0.0.1"
     ib_port: int = 7497
     ib_client_id: int = 1
+    ib_account_id: str | None = None
+    ib_trading_mode: str = "paper"  # paper | live
+    ib_read_only_api: bool = True
+    # IB market-data tier. REALTIME needs a paid market-data subscription on
+    # the IB account; paper / unsubscribed accounts should use DELAYED_FROZEN
+    # to get ~15-min-delayed ticks for free.
+    # Accepted: realtime | frozen | delayed | delayed_frozen.
+    ib_market_data_type: str = "realtime"
+    # Bar aggregation source for the 1-min bars the engine subscribes/requests.
+    # INTERNAL = Nautilus aggregates from trade ticks (needs tick-by-tick sub).
+    # EXTERNAL = use IB's reqHistoricalData (works with delayed data too).
+    # Pair "delayed*"/"frozen" market data with EXTERNAL; REALTIME w/ tick sub
+    # can use INTERNAL.
+    bar_aggregation_source: str = "external"
 
     # --- Research layer ---
     openbb_api_url: str | None = None  # e.g. http://localhost:6900
@@ -71,3 +85,15 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+def bar_type_str(instrument_id: object) -> str:
+    """One source of truth for the bar-type string the engine uses.
+
+    Reads ``HELM_BAR_AGGREGATION_SOURCE`` once per process. Unknown values fall
+    back to EXTERNAL since it's the safer default for IB without a tick-data sub.
+    """
+    src = (get_settings().bar_aggregation_source or "external").strip().upper()
+    if src not in ("INTERNAL", "EXTERNAL"):
+        src = "EXTERNAL"
+    return f"{instrument_id}-1-MINUTE-LAST-{src}"
