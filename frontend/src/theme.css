@@ -3,28 +3,25 @@
 @tailwind utilities;
 
 /* ------------------------------------------------------------------ */
-/* Design tokens — mirrored from tailwind.config.js                   */
+/* Design tokens — OpenBB-style flat dark palette                      */
 /* ------------------------------------------------------------------ */
 :root {
-  --bg-0:          #020c18;
-  --bg-1:          #06121f;
-  --bg-2:          #0b1a2a;
-  --bg-3:          #112133;
-  --border:        #152a42;
-  --border-strong: #1e3d5e;
-  --fg:            #dde9f8;
-  --fg-muted:      #6d8daa;
-  --fg-faint:      #3a5570;
-  --gain:          #20d47c;
-  --loss:          #f0495a;
-  --accent:        #06d1f3;
+  --bg-0:          #151518;
+  --bg-1:          #1b1b1f;
+  --bg-2:          #212126;
+  --bg-3:          #2b2b31;
+  --border:        #323237;
+  --border-strong: #444448;
+  --fg:            #ffffff;
+  --fg-muted:      #9a9aa2;
+  --fg-faint:      #6a6a72;
+  --gain:          #25c685;
+  --loss:          #f0455a;
+  --accent:        #ff8000;
   --warn:          #f0a020;
   color-scheme: dark;
 }
 
-/* ------------------------------------------------------------------ */
-/* Reset & box model                                                   */
-/* ------------------------------------------------------------------ */
 *, *::before, *::after { box-sizing: border-box; }
 
 html, body, #root {
@@ -32,18 +29,10 @@ html, body, #root {
   margin: 0;
 }
 
-/* ------------------------------------------------------------------ */
-/* Body — atmospheric dark background with ambient glow                */
-/* ------------------------------------------------------------------ */
 body {
   background-color: var(--bg-0);
-  /* Ambient bioluminescence — faint radial glows suggesting depth */
-  background-image:
-    radial-gradient(ellipse 80% 60% at 15% 0%,   rgba(6, 209, 243, 0.06) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 88% 100%,  rgba(32, 212, 124, 0.04) 0%, transparent 55%);
-  background-attachment: fixed;
   color: var(--fg);
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: "DM Sans", system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
@@ -51,69 +40,54 @@ body {
   overflow: hidden;
 }
 
-/* Subtle grain overlay — adds analog texture to the digital surface */
+/* Faint grain — keeps the flat dark from feeling dead, OpenBB stays restrained */
 body::after {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 9998;
   pointer-events: none;
-  opacity: 0.022;
+  opacity: 0.015;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 256px 256px;
-  mix-blend-mode: overlay;
 }
 
-/* ------------------------------------------------------------------ */
-/* Monospace / tabular numerics                                         */
-/* ------------------------------------------------------------------ */
+/* Monospace / tabular numerics */
 .num {
   font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
 }
 
-/* ------------------------------------------------------------------ */
-/* Value change flash animations                                        */
-/* ------------------------------------------------------------------ */
+/* Value change flash animations */
 @keyframes flash-gain {
-  from { background-color: rgba(32, 212, 124, 0.22); }
+  from { background-color: rgba(37, 198, 133, 0.20); }
   to   { background-color: transparent; }
 }
 @keyframes flash-loss {
-  from { background-color: rgba(240, 73, 90, 0.22); }
+  from { background-color: rgba(240, 69, 90, 0.20); }
   to   { background-color: transparent; }
 }
 .flash-gain { animation: flash-gain 0.7s ease-out; }
 .flash-loss { animation: flash-loss 0.7s ease-out; }
 
-/* Radar ping — used for AI-active status dot */
+/* Radar ping — used for AI-active / Live status dots */
 @keyframes radar-ping {
-  0%         { transform: scale(1);   opacity: 0.8; }
-  75%, 100%  { transform: scale(2.4); opacity: 0; }
+  0%        { transform: scale(1);   opacity: 0.8; }
+  75%, 100% { transform: scale(2.2); opacity: 0; }
 }
 
-/* Accent glow pulse — used for "Live" connection dot */
-@keyframes glow-breathe {
-  0%, 100% { opacity: 0.7; box-shadow: 0 0 4px currentColor; }
-  50%       { opacity: 1;   box-shadow: 0 0 10px currentColor, 0 0 20px currentColor; }
-}
-.glow-breathe { animation: glow-breathe 2s ease-in-out infinite; }
-
-/* ------------------------------------------------------------------ */
-/* Scrollbars — nearly invisible, reveal on hover                      */
-/* ------------------------------------------------------------------ */
-::-webkit-scrollbar       { width: 6px; height: 6px; }
+/* Scrollbars — thin, recessive */
+::-webkit-scrollbar       { width: 7px; height: 7px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
   background: var(--border-strong);
   border-radius: 4px;
   border: 1px solid var(--bg-0);
-  transition: background 0.2s;
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--fg-faint); }
 
 /* ------------------------------------------------------------------ */
-/* Dockview dark theme — Abyssal Terminal                              */
+/* Dockview theme — OpenBB flat dark                                   */
 /* ------------------------------------------------------------------ */
 .dockview-theme-helm {
   --dv-background-color:                              var(--bg-0);
@@ -122,87 +96,76 @@ body::after {
   --dv-group-view-background-color:                   var(--bg-1);
   --dv-tabs-container-scrollbar-color:                var(--border-strong);
 
-  /* Active group — visible panel tab */
   --dv-activegroup-visiblepanel-tab-background-color: var(--bg-2);
   --dv-activegroup-hiddenpanel-tab-background-color:  var(--bg-0);
-  /* Inactive group */
   --dv-inactivegroup-visiblepanel-tab-background-color: var(--bg-1);
   --dv-inactivegroup-hiddenpanel-tab-background-color:  var(--bg-0);
-  /* Tab text */
-  --dv-activegroup-visiblepanel-tab-color:  var(--fg);
-  --dv-activegroup-hiddenpanel-tab-color:   var(--fg-faint);
+  --dv-activegroup-visiblepanel-tab-color:   var(--fg);
+  --dv-activegroup-hiddenpanel-tab-color:    var(--fg-faint);
   --dv-inactivegroup-visiblepanel-tab-color: var(--fg-muted);
   --dv-inactivegroup-hiddenpanel-tab-color:  var(--fg-faint);
 
-  --dv-separator-border:            var(--border);
+  --dv-separator-border:             var(--border);
   --dv-paneview-header-border-color: var(--border);
   --dv-tab-divider-color:            var(--border);
   --dv-icon-hover-background-color:  var(--bg-3);
-  --dv-floating-box-shadow:          0 12px 40px rgba(2, 12, 24, 0.8), 0 0 0 1px var(--border-strong);
-  --dv-drag-over-background-color:   rgba(6, 209, 243, 0.08);
+  --dv-floating-box-shadow:          0 12px 40px rgba(0, 0, 0, 0.7);
+  --dv-drag-over-background-color:   rgba(255, 128, 0, 0.08);
   --dv-drag-over-border-color:       var(--accent);
 
   font-size: 12px;
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: "DM Sans", system-ui, sans-serif;
 }
 
-/* Tab chrome */
 .dockview-theme-helm .dv-tab {
   font-size: 11.5px;
   font-weight: 500;
   height: 32px;
   border-right: 1px solid var(--border);
-  letter-spacing: 0.01em;
   transition: color 0.15s, background-color 0.15s;
 }
 
-/* Active tab — cyan underline accent */
+/* Active tab — orange underline accent */
 .dockview-theme-helm .dv-tab.active-tab {
   border-bottom: 2px solid var(--accent) !important;
   color: var(--fg) !important;
 }
 
-/* Panel group: faint top glow edge */
-.dockview-theme-helm .groupview > .tabs-and-actions-container {
-  border-top: 1px solid rgba(6, 209, 243, 0.07);
-}
-
-/* Resize handle — subtle accent on hover */
 .dockview-theme-helm .dv-resize-handle:hover {
-  background: rgba(6, 209, 243, 0.15);
+  background: rgba(255, 128, 0, 0.20);
 }
 
 /* ------------------------------------------------------------------ */
 /* Shared component utilities                                           */
 /* ------------------------------------------------------------------ */
 @layer components {
-  .panel-pad  { @apply p-2.5; }
-  .hairline   { @apply border-border; }
+  .panel-pad { @apply p-2.5; }
+  .hairline  { @apply border-border; }
 
-  /* Status/label chip */
   .chip {
-    @apply inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-2xs font-medium;
+    @apply inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-2xs font-medium;
   }
 
-  /* Base button */
   .btn {
-    @apply inline-flex items-center gap-1.5 rounded-lg border border-border bg-bg-2
+    @apply inline-flex items-center gap-1.5 rounded-md border border-border bg-bg-2
       px-2 py-1 text-sm text-fg transition-all duration-150
       hover:bg-bg-3 hover:border-border-strong
       disabled:cursor-not-allowed disabled:opacity-40;
   }
 
-  /* Accent button variant */
   .btn-accent {
-    @apply border-accent/30 bg-accent/10 text-accent hover:bg-accent/20 hover:border-accent/50
-      hover:shadow-glow-sm;
+    @apply border-accent/40 bg-accent/15 text-accent hover:bg-accent/25 hover:border-accent/60;
   }
 
-  /* Scrollable container */
   .scroll-y { @apply h-full overflow-y-auto; }
 
-  /* Glass panel surface */
-  .glass {
-    @apply bg-bg-1/80 backdrop-blur-md border border-border;
+  /* Sidebar / nav row */
+  .nav-row {
+    @apply flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-fg-muted
+      transition-colors duration-150 cursor-pointer
+      hover:bg-bg-2 hover:text-fg;
+  }
+  .nav-row-active {
+    @apply bg-bg-2 text-fg;
   }
 }

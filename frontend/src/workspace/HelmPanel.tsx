@@ -3,8 +3,8 @@
  *
  * Every panel in the workspace is a `helm-widget`. This reads the panel's
  * params (`{ widgetType, widgetId }`), resolves the `WidgetDefinition` from the
- * registry, seeds + subscribes to that instance's config, and renders the
- * widget inside `<WidgetFrame>`. Unknown widget types fail soft.
+ * registry, seeds + subscribes to that instance's config (scoped to the active
+ * dashboard), and renders the widget inside `<WidgetFrame>`.
  */
 
 import { useCallback, useMemo } from "react";
@@ -31,9 +31,12 @@ export function HelmPanel(props: IDockviewPanelProps<HelmPanelParams>) {
   // Seed defaults once (idempotent in the store) before first render uses them.
   if (def) ensureConfig(widgetId, def.defaultConfig as Record<string, unknown>);
 
-  // Subscribe only to this instance's config slice.
+  // Subscribe to this instance's config slice on the active dashboard.
   const config = useWorkspace(
-    useShallow((s) => s.configs[widgetId] ?? def?.defaultConfig ?? {}),
+    useShallow((s) => {
+      const active = s.dashboards.find((d) => d.id === s.activeId);
+      return active?.configs[widgetId] ?? def?.defaultConfig ?? {};
+    }),
   );
 
   const setConfig = useCallback<WidgetProps["setConfig"]>(

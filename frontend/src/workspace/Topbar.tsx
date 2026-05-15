@@ -1,20 +1,19 @@
 /**
- * Topbar — app header. Glass surface with ambient glow.
- * Condenses gracefully on mobile (isMobile prop hides workspace controls).
+ * Topbar — OpenBB-style header: global search (opens Cmd+K palette), the
+ * active dashboard breadcrumb, then live status (AI, equity, connection) and
+ * the Add Widget + Copilot controls on the right.
  */
 
-import { useCallback, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Layers, LayoutGrid, Pause, Play } from "lucide-react";
+import { Pause, Play, Search, LayoutGrid, Sparkles, ChevronRight } from "lucide-react";
 import { api } from "@/api/client";
 import type { AITraderStatus, PortfolioSnapshot } from "@/api/types";
 import { money, pct, signedMoney } from "@/lib/format";
 import { useWsEvent, useWsStatus } from "@/hooks/useWsEvent";
+import { useWorkspace, useActiveDashboard } from "@/store/workspace";
 import { Pill, StatDelta } from "@/components/ui";
-import { useWorkspaceController } from "./Workspace";
-import { WidgetCatalog } from "./WidgetCatalog";
 
-// --- AI status pill ----------------------------------------------------------
+// --- AI status ---------------------------------------------------------------
 
 const AI_TONE = {
   idle:      "neutral",
@@ -47,20 +46,12 @@ function AiStatus() {
 
   return (
     <div className="flex items-center gap-2">
-      <Pill tone={tone} dot pulse={pulsing} glow={pulsing}>
-        AI {state}
-      </Pill>
+      <Pill tone={tone} dot pulse={pulsing}>AI {state}</Pill>
       {data && (
-        <>
-          <Pill tone="neutral" className="hidden md:inline-flex">{data.mode}</Pill>
-          <span className="hidden text-2xs text-fg-faint lg:inline">
-            {data.strategy_name}
-          </span>
-          <span className="hidden items-center gap-2 text-2xs text-fg-muted xl:flex">
-            <span className="num">{data.decisions_today} today</span>
-            <span className="num">{pct(data.win_rate * 100, 0)} win</span>
-          </span>
-        </>
+        <span className="hidden items-center gap-2 text-2xs text-fg-muted xl:flex">
+          <span className="num">{data.decisions_today} today</span>
+          <span className="num">{pct(data.win_rate * 100, 0)} win</span>
+        </span>
       )}
       <button
         type="button"
@@ -79,7 +70,7 @@ function AiStatus() {
   );
 }
 
-// --- Portfolio summary -------------------------------------------------------
+// --- portfolio summary -------------------------------------------------------
 
 function PortfolioSummary() {
   const qc = useQueryClient();
@@ -93,9 +84,7 @@ function PortfolioSummary() {
     qc.setQueryData(["trading", "portfolio"], payload);
   });
 
-  if (!data) {
-    return <div className="num text-sm text-fg-faint">— equity</div>;
-  }
+  if (!data) return <div className="num text-sm text-fg-faint">— equity</div>;
 
   return (
     <div className="flex items-center gap-3">
@@ -103,24 +92,19 @@ function PortfolioSummary() {
         <span className="text-2xs text-fg-faint">Equity</span>
         <span className="num text-sm font-semibold text-fg">{money(data.equity)}</span>
       </div>
-      <div className="h-6 w-px bg-border" />
+      <div className="hidden h-6 w-px bg-border sm:block" />
       <div className="hidden flex-col items-end leading-none sm:flex">
         <span className="text-2xs text-fg-faint">Day P&amp;L</span>
         <span className="text-sm font-semibold">
           <StatDelta value={data.total_pnl} format={signedMoney} />
         </span>
       </div>
-      <Pill
-        tone={data.total_pnl_pct >= 0 ? "gain" : "loss"}
-        glow={Math.abs(data.total_pnl_pct) > 1}
-      >
-        {pct(data.total_pnl_pct)}
-      </Pill>
+      <Pill tone={data.total_pnl_pct >= 0 ? "gain" : "loss"}>{pct(data.total_pnl_pct)}</Pill>
     </div>
   );
 }
 
-// --- Connection pill ---------------------------------------------------------
+// --- connection --------------------------------------------------------------
 
 const WS_TONE  = { connecting: "warn", open: "gain", closed: "loss" } as const;
 const WS_LABEL = { connecting: "Connecting", open: "Live", closed: "Offline" } as const;
@@ -128,89 +112,102 @@ const WS_LABEL = { connecting: "Connecting", open: "Live", closed: "Offline" } a
 function ConnectionPill() {
   const status = useWsStatus();
   return (
-    <Pill
-      tone={WS_TONE[status]}
-      dot
-      pulse={status === "connecting"}
-      glow={status === "open"}
-    >
+    <Pill tone={WS_TONE[status]} dot pulse={status === "connecting"}>
       {WS_LABEL[status]}
     </Pill>
   );
 }
 
-// --- Topbar ------------------------------------------------------------------
+// --- topbar ------------------------------------------------------------------
 
-export function Topbar({ isMobile = false }: { isMobile?: boolean }) {
-  const [catalogOpen, setCatalogOpen] = useState(false);
-  const resetLayout = useWorkspaceController((s) => s.resetLayout);
-
-  const onReset = useCallback(() => {
-    if (window.confirm("Reset workspace to default layout? This clears all widget settings.")) {
-      resetLayout();
-    }
-  }, [resetLayout]);
+export function Topbar({
+  isMobile = false,
+  copilotOpen = false,
+  onOpenPalette,
+  onOpenWidgets,
+  onToggleCopilot,
+}: {
+  isMobile?: boolean;
+  copilotOpen?: boolean;
+  onOpenPalette?: () => void;
+  onOpenWidgets?: () => void;
+  onToggleCopilot?: () => void;
+}) {
+  const active  = useActiveDashboard();
+  const folders = useWorkspace((s) => s.folders);
+  const folder  = folders.find((f) => f.id === active.folderId);
 
   return (
-    <>
-      {/* Topbar shell — glass surface with ambient border-bottom glow */}
-      <header
-        className="relative flex h-11 flex-shrink-0 items-center gap-3 px-3"
-        style={{
-          background: "linear-gradient(180deg, rgba(11,26,42,0.85) 0%, rgba(6,18,31,0.80) 100%)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          borderBottom: "1px solid rgba(6, 209, 243, 0.10)",
-          boxShadow: "0 1px 0 rgba(6,209,243,0.05), 0 4px 24px rgba(2,12,24,0.4)",
-        }}
-      >
-        {/* Wordmark */}
+    <header className="flex h-11 flex-shrink-0 items-center gap-3 border-b border-border bg-bg-0 px-3">
+      {/* Mobile: compact wordmark. Desktop: dashboard breadcrumb. */}
+      {isMobile ? (
         <div className="flex items-center gap-2">
           <img src="/helm.svg" alt="Helm" className="h-5 w-5" />
-          <span
-            className="text-sm font-bold tracking-tight text-fg"
-            style={{ fontFamily: "Syne, system-ui, sans-serif", letterSpacing: "-0.01em" }}
-          >
-            Helm
-          </span>
+          <span className="text-sm font-bold tracking-tight text-fg">Helm</span>
         </div>
-
-        <div className="h-5 w-px bg-border" />
-
-        <AiStatus />
-
-        <div className="ml-auto flex items-center gap-3">
-          <PortfolioSummary />
-          <div className="h-5 w-px bg-border" />
-          <ConnectionPill />
-
-          {/* Workspace controls — desktop only */}
-          {!isMobile && (
+      ) : (
+        <div className="flex min-w-0 items-center gap-1.5">
+          {folder && (
             <>
-              <div className="h-5 w-px bg-border" />
-              <button
-                type="button"
-                className="btn btn-accent h-7 px-2 text-xs"
-                onClick={() => setCatalogOpen(true)}
-              >
-                <LayoutGrid className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Add Widget</span>
-              </button>
-              <button
-                type="button"
-                className="btn h-7 px-2 text-xs"
-                onClick={onReset}
-                title="Reset workspace layout"
-              >
-                <Layers className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Reset</span>
-              </button>
+              <span className="truncate text-xs text-fg-faint">{folder.name}</span>
+              <ChevronRight className="h-3 w-3 flex-shrink-0 text-fg-faint" />
             </>
           )}
+          <span className="truncate text-sm font-semibold text-fg">{active.name}</span>
         </div>
-      </header>
+      )}
 
-      <WidgetCatalog open={catalogOpen} onClose={() => setCatalogOpen(false)} />
-    </>
+      {/* Global search → command palette (desktop only) */}
+      {!isMobile && onOpenPalette && (
+        <button
+          type="button"
+          onClick={onOpenPalette}
+          className="group flex h-7 w-64 items-center gap-2 rounded-md border border-border
+            bg-bg-1 px-2.5 text-xs text-fg-faint transition-colors hover:border-border-strong hover:bg-bg-2"
+        >
+          <Search className="h-3.5 w-3.5" />
+          <span className="flex-1 text-left">Search widgets, dashboards…</span>
+          <kbd className="rounded border border-border bg-bg-2 px-1 py-0.5 text-2xs">⌘K</kbd>
+        </button>
+      )}
+
+      <div className="ml-auto flex items-center gap-3">
+        <AiStatus />
+        <div className="hidden h-6 w-px bg-border md:block" />
+        <PortfolioSummary />
+        <div className="h-6 w-px bg-border" />
+        <ConnectionPill />
+
+        {!isMobile && (
+          <>
+            <div className="h-6 w-px bg-border" />
+            <button
+              type="button"
+              className="btn h-7 px-2 text-xs"
+              onClick={onOpenWidgets}
+              title="Add widget"
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline">Add Widget</span>
+            </button>
+          </>
+        )}
+
+        {onToggleCopilot && (
+          <button
+            type="button"
+            className={
+              "btn h-7 px-2 text-xs " +
+              (copilotOpen ? "btn-accent" : "")
+            }
+            onClick={onToggleCopilot}
+            title="Toggle Copilot"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            <span className="hidden lg:inline">Copilot</span>
+          </button>
+        )}
+      </div>
+    </header>
   );
 }

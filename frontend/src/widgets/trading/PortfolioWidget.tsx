@@ -12,23 +12,13 @@ function StatCard({
   label,
   value,
   className,
-  accent = false,
 }: {
   label: string;
   value: string;
   className?: string;
-  accent?: boolean;
 }) {
   return (
-    <div
-      className={cn(
-        "flex flex-col gap-0.5 rounded-lg px-2.5 py-2 transition-all duration-200",
-        "border",
-        accent
-          ? "border-border-strong bg-bg-2/80"
-          : "border-border bg-bg-2/40 hover:bg-bg-2/70 hover:border-border-strong",
-      )}
-    >
+    <div className="flex flex-col gap-0.5 rounded-md border border-border bg-bg-2 px-2.5 py-2">
       <span className="text-2xs font-medium uppercase tracking-wider text-fg-faint">{label}</span>
       <span className={cn("num text-sm font-semibold", className)}>{value}</span>
     </div>
@@ -54,56 +44,23 @@ export default function PortfolioWidget(_props: WidgetProps) {
   if (!data)     return <Empty />;
 
   const p = data;
-  const pnlPositive = p.total_pnl >= 0;
 
   return (
-    <div className="scroll-y panel-pad flex flex-col gap-3">
-      {/* Headline equity — gradient text, bold presence */}
-      <div
-        className="rounded-xl border border-border-strong p-4"
-        style={{
-          background: "linear-gradient(135deg, rgba(11,26,42,0.9) 0%, rgba(6,18,31,0.8) 100%)",
-          boxShadow: pnlPositive
-            ? "inset 0 1px 0 rgba(32,212,124,0.08), 0 0 24px rgba(32,212,124,0.04)"
-            : "inset 0 1px 0 rgba(240,73,90,0.08), 0 0 24px rgba(240,73,90,0.04)",
-        }}
-      >
+    <div className="scroll-y panel-pad flex flex-col gap-2.5">
+      {/* Headline equity */}
+      <div className="rounded-md border border-border bg-bg-2 p-3">
         <span className="text-2xs font-medium uppercase tracking-wider text-fg-faint">
           Total Equity
         </span>
         <div className="mt-1 flex items-baseline gap-2.5">
-          <span
-            className="num text-3xl font-bold tabular-nums"
-            style={{
-              background: pnlPositive
-                ? "linear-gradient(135deg, #dde9f8 30%, #20d47c 100%)"
-                : "linear-gradient(135deg, #dde9f8 30%, #f0495a 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
-            {money(p.equity)}
-          </span>
-          <span className={cn("num text-base font-semibold", pnlColor(p.total_pnl))}>
-            {arrow(p.total_pnl)}&nbsp;{signedMoney(p.total_pnl)}
+          <span className="num text-2xl font-bold tabular-nums text-fg">{money(p.equity)}</span>
+          <span className={cn("num text-sm font-semibold", pnlColor(p.total_pnl))}>
+            {arrow(p.total_pnl)}&nbsp;{signedMoney(p.total_pnl)} ({pct(p.total_pnl_pct)})
           </span>
         </div>
-        <div className="mt-1.5 flex items-center gap-2">
-          <span
-            className={cn(
-              "chip border font-semibold",
-              pnlPositive
-                ? "bg-gain/10 text-gain border-gain/25"
-                : "bg-loss/10 text-loss border-loss/25",
-            )}
-          >
-            {pct(p.total_pnl_pct)}
-          </span>
-          <span className="text-2xs text-fg-faint">
-            from {money(p.starting_equity)} · {p.currency}
-          </span>
-        </div>
+        <span className="mt-1 block text-2xs text-fg-faint">
+          from {money(p.starting_equity)} starting · {p.currency}
+        </span>
       </div>
 
       {/* Stat grid */}
@@ -118,8 +75,8 @@ export default function PortfolioWidget(_props: WidgetProps) {
           value={signedMoney(p.realized_pnl)}
           className={pnlColor(p.realized_pnl)}
         />
-        <StatCard label="Net Exposure"    value={money(p.net_exposure)} />
-        <StatCard label="Open Positions"  value={num(p.positions_count, 0)} />
+        <StatCard label="Net Exposure"   value={money(p.net_exposure)} />
+        <StatCard label="Open Positions" value={num(p.positions_count, 0)} />
         <StatCard
           label="Win Rate"
           value={pct(p.win_rate * 100, 1)}

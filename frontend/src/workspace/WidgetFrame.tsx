@@ -132,18 +132,11 @@ export function WidgetFrame({
   children: ReactNode;
 }) {
   return (
-    <div className="flex h-full flex-col" style={{ background: "var(--bg-1)" }}>
-      {/* Glass panel header with subtle top-highlight edge */}
-      <header
-        className="flex h-7 flex-shrink-0 items-center gap-1.5 px-2.5"
-        style={{
-          background: "linear-gradient(180deg, rgba(17,33,51,0.95) 0%, rgba(11,26,42,0.90) 100%)",
-          borderBottom: "1px solid rgba(21,42,66,0.9)",
-          boxShadow: "inset 0 1px 0 rgba(6,209,243,0.06)",
-        }}
-      >
-        {Icon && <Icon className="h-3.5 w-3.5 flex-shrink-0 text-accent/60" />}
-        <span className="truncate text-xs font-semibold tracking-wide text-fg/90">{title}</span>
+    <div className="flex h-full flex-col bg-bg-1">
+      {/* Flat panel header — thin border, restrained (OpenBB-style) */}
+      <header className="flex h-7 flex-shrink-0 items-center gap-1.5 border-b border-border bg-bg-2 px-2.5">
+        {Icon && <Icon className="h-3.5 w-3.5 flex-shrink-0 text-fg-faint" />}
+        <span className="truncate text-xs font-semibold text-fg">{title}</span>
         {actions != null && (
           <div className="ml-auto flex items-center gap-1">{actions}</div>
         )}

@@ -4,32 +4,32 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Deep midnight blue-black surfaces — differentiated by lightness.
+        // OpenBB-style flat dark surfaces — near-black, slightly cool gray.
         bg: {
-          0: "#020c18", // abyss — app canvas
-          1: "#06121f", // panel surface
-          2: "#0b1a2a", // raised / header
-          3: "#112133", // hover / active
+          0: "#151518", // app canvas
+          1: "#1b1b1f", // panel surface
+          2: "#212126", // raised / header
+          3: "#2b2b31", // hover / active
         },
         border: {
-          DEFAULT: "#152a42",
-          strong: "#1e3d5e",
+          DEFAULT: "#323237",
+          strong: "#444448",
         },
         fg: {
-          DEFAULT: "#dde9f8",  // primary text, blue-tinted white
-          muted: "#6d8daa",    // secondary
-          faint: "#3a5570",    // tertiary / disabled
+          DEFAULT: "#ffffff",  // primary text
+          muted: "#9a9aa2",    // secondary
+          faint: "#6a6a72",    // tertiary / disabled
         },
-        // P&L semantics — vivid on dark blue backgrounds.
-        gain:   { DEFAULT: "#20d47c", dim: "#051a11" },
-        loss:   { DEFAULT: "#f0495a", dim: "#1f060a" },
-        accent: { DEFAULT: "#06d1f3", dim: "#021822" },
-        warn:   { DEFAULT: "#f0a020", dim: "#1e1200" },
+        // P&L semantics — green/red, the only colors besides the orange accent.
+        gain:   { DEFAULT: "#25c685", dim: "#0e2a1d" },
+        loss:   { DEFAULT: "#f0455a", dim: "#2e1115" },
+        // OpenBB signature orange — the single loud accent.
+        accent: { DEFAULT: "#ff8000", dim: "#2e1c08" },
+        warn:   { DEFAULT: "#f0a020", dim: "#2e2410" },
       },
       fontFamily: {
-        sans:    ['"Plus Jakarta Sans"', "system-ui", "sans-serif"],
-        display: ["Syne", '"Plus Jakarta Sans"', "system-ui", "sans-serif"],
-        mono:    ["JetBrains Mono", "IBM Plex Mono", "ui-monospace", "monospace"],
+        sans: ['"DM Sans"', "system-ui", "sans-serif"],
+        mono: ["JetBrains Mono", "IBM Plex Mono", "ui-monospace", "monospace"],
       },
       fontSize: {
         "2xs": ["10px", "14px"],
@@ -43,20 +43,29 @@ export default {
         2.5: "10px",
       },
       boxShadow: {
-        "glow":      "0 0 16px rgba(6, 209, 243, 0.25)",
-        "glow-sm":   "0 0 8px rgba(6, 209, 243, 0.18)",
-        "glow-gain": "0 0 12px rgba(32, 212, 124, 0.25)",
-        "glow-loss": "0 0 12px rgba(240, 73, 90, 0.25)",
-        "panel":     "0 4px 32px rgba(2, 12, 24, 0.6)",
-      },
-      animation: {
-        "radar": "radar-ping 1.4s cubic-bezier(0,0,0.2,1) infinite",
+        "glow":    "0 0 14px rgba(255, 128, 0, 0.20)",
+        "glow-sm": "0 0 8px rgba(255, 128, 0, 0.15)",
+        "panel":   "0 8px 32px rgba(0, 0, 0, 0.55)",
+        "copilot": "-8px 0 32px rgba(0, 0, 0, 0.45)",
       },
       keyframes: {
         "radar-ping": {
           "0%": { transform: "scale(1)", opacity: "0.8" },
           "75%, 100%": { transform: "scale(2.2)", opacity: "0" },
         },
+        "slide-in-right": {
+          from: { transform: "translateX(100%)", opacity: "0" },
+          to:   { transform: "translateX(0)", opacity: "1" },
+        },
+        "fade-up": {
+          from: { transform: "translateY(6px)", opacity: "0" },
+          to:   { transform: "translateY(0)", opacity: "1" },
+        },
+      },
+      animation: {
+        "radar":          "radar-ping 1.4s cubic-bezier(0,0,0.2,1) infinite",
+        "slide-in-right": "slide-in-right 0.22s cubic-bezier(0.16,1,0.3,1)",
+        "fade-up":        "fade-up 0.2s ease-out",
       },
     },
   },

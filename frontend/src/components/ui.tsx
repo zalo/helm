@@ -1,5 +1,5 @@
 /**
- * Shared presentational primitives — Abyssal Terminal design system.
+ * Shared presentational primitives — OpenBB-style flat dark design system.
  */
 
 import {
@@ -16,10 +16,10 @@ type Tone = "neutral" | "gain" | "loss" | "accent" | "warn";
 
 const TONE_CHIP: Record<Tone, string> = {
   neutral: "bg-bg-2 text-fg-muted border border-border",
-  gain:    "bg-gain/10 text-gain border border-gain/25",
-  loss:    "bg-loss/10 text-loss border border-loss/25",
-  accent:  "bg-accent/10 text-accent border border-accent/25",
-  warn:    "bg-warn/10 text-warn border border-warn/25",
+  gain:    "bg-gain/12 text-gain border border-gain/25",
+  loss:    "bg-loss/12 text-loss border border-loss/25",
+  accent:  "bg-accent/12 text-accent border border-accent/25",
+  warn:    "bg-warn/12 text-warn border border-warn/25",
 };
 
 const TONE_DOT: Record<Tone, string> = {
@@ -30,46 +30,28 @@ const TONE_DOT: Record<Tone, string> = {
   warn:    "bg-warn",
 };
 
-const TONE_GLOW: Record<Tone, string> = {
-  neutral: "",
-  gain:    "shadow-glow-gain",
-  loss:    "shadow-glow-loss",
-  accent:  "shadow-glow-sm",
-  warn:    "",
-};
-
-/** Status/label chip with optional glow. */
+/** Status/label chip. Optional leading color dot, with optional radar pulse. */
 export function Pill({
   tone = "neutral",
   dot = false,
   pulse = false,
-  glow = false,
   className,
   children,
 }: {
   tone?: Tone;
   dot?: boolean;
   pulse?: boolean;
-  /** Emit a subtle color glow matching the tone. */
-  glow?: boolean;
   className?: string;
   children: ReactNode;
 }) {
   return (
-    <span
-      className={cn(
-        "chip whitespace-nowrap transition-shadow duration-300",
-        TONE_CHIP[tone],
-        glow && TONE_GLOW[tone],
-        className,
-      )}
-    >
+    <span className={cn("chip whitespace-nowrap", TONE_CHIP[tone], className)}>
       {dot && (
         <span className="relative flex h-1.5 w-1.5 flex-shrink-0">
           {pulse && (
             <span
               className={cn(
-                "absolute inline-flex h-full w-full rounded-full opacity-75",
+                "absolute inline-flex h-full w-full rounded-full",
                 TONE_DOT[tone],
                 "animate-[radar-ping_1.4s_cubic-bezier(0,0,0.2,1)_infinite]",
               )}
@@ -117,10 +99,10 @@ export function IconButton({
     <button
       type="button"
       className={cn(
-        "inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border",
-        "bg-bg-2 text-fg-muted transition-all duration-150 hover:bg-bg-3 hover:text-fg hover:border-border-strong",
+        "inline-flex h-7 w-7 items-center justify-center rounded-md border border-border",
+        "bg-bg-2 text-fg-muted transition-colors hover:bg-bg-3 hover:text-fg hover:border-border-strong",
         "disabled:cursor-not-allowed disabled:opacity-40",
-        active && "border-accent/40 bg-accent/10 text-accent shadow-glow-sm",
+        active && "border-accent/40 bg-accent/15 text-accent",
         className,
       )}
       {...props}
@@ -134,8 +116,7 @@ export function Spinner({ className }: { className?: string }) {
 }
 
 /**
- * Backdrop modal with glass-morphism surface.
- * Renders into a portal, dismisses on Esc + backdrop click.
+ * Backdrop modal. Renders into a portal, dismisses on Esc + backdrop click.
  */
 export function Modal({
   open,
@@ -161,16 +142,12 @@ export function Modal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-bg-0/70 p-8 backdrop-blur-md"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-bg-0/75 p-8 backdrop-blur-sm"
       onMouseDown={onClose}
     >
       <div
-        className="flex max-h-full w-full flex-col overflow-hidden rounded-xl border border-border-strong shadow-panel"
-        style={{
-          maxWidth: width,
-          background: "linear-gradient(135deg, rgba(11,26,42,0.97) 0%, rgba(6,18,31,0.97) 100%)",
-          boxShadow: "0 24px 64px rgba(2,12,24,0.8), 0 0 0 1px rgba(6,209,243,0.08)",
-        }}
+        className="flex max-h-full w-full flex-col overflow-hidden rounded-xl border border-border-strong bg-bg-1 shadow-panel"
+        style={{ maxWidth: width }}
         onMouseDown={(e) => e.stopPropagation()}
       >
         {title != null && (

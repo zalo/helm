@@ -14,11 +14,11 @@ import { Loading, ErrorState, Empty } from "./_shared";
 // --- style maps --------------------------------------------------------------
 
 const ACTION_COLORS: Record<AIAction, { border: string; bg: string; text: string; label: string }> = {
-  BUY:       { border: "#20d47c", bg: "rgba(32,212,124,0.06)",  text: "text-gain",   label: "bg-gain/10 text-gain border-gain/30" },
-  SELL:      { border: "#f0495a", bg: "rgba(240,73,90,0.06)",   text: "text-loss",   label: "bg-loss/10 text-loss border-loss/30" },
-  HOLD:      { border: "#152a42", bg: "rgba(21,42,66,0.30)",    text: "text-fg-muted",label: "bg-bg-2 text-fg-muted border-border" },
-  CLOSE:     { border: "#f0a020", bg: "rgba(240,160,32,0.06)",  text: "text-warn",   label: "bg-warn/10 text-warn border-warn/30" },
-  REBALANCE: { border: "#06d1f3", bg: "rgba(6,209,243,0.06)",   text: "text-accent", label: "bg-accent/10 text-accent border-accent/30" },
+  BUY:       { border: "#25c685", bg: "rgba(37,198,133,0.06)",  text: "text-gain",    label: "bg-gain/12 text-gain border-gain/30" },
+  SELL:      { border: "#f0455a", bg: "rgba(240,69,90,0.06)",   text: "text-loss",    label: "bg-loss/12 text-loss border-loss/30" },
+  HOLD:      { border: "#323237", bg: "rgba(43,43,49,0.40)",    text: "text-fg-muted", label: "bg-bg-2 text-fg-muted border-border" },
+  CLOSE:     { border: "#f0a020", bg: "rgba(240,160,32,0.06)",  text: "text-warn",    label: "bg-warn/12 text-warn border-warn/30" },
+  REBALANCE: { border: "#ff8000", bg: "rgba(255,128,0,0.06)",   text: "text-accent",  label: "bg-accent/12 text-accent border-accent/30" },
 };
 
 const STATE_COLOR: Record<AIState, string> = {
@@ -39,18 +39,14 @@ const SENTIMENT_STYLE: Record<SignalSentiment, string> = {
 function ConfidenceBar({ value }: { value: number }) {
   const pctVal  = Math.round(value * 100);
   const barColor =
-    pctVal >= 70 ? "#20d47c" :
-    pctVal >= 40 ? "#f0a020" : "#f0495a";
+    pctVal >= 70 ? "#25c685" :
+    pctVal >= 40 ? "#f0a020" : "#f0455a";
   return (
     <div className="flex items-center gap-2">
       <div className="h-1 flex-1 overflow-hidden rounded-full bg-bg-3">
         <div
           className="h-full rounded-full transition-all duration-500"
-          style={{
-            width: `${pctVal}%`,
-            background: `linear-gradient(90deg, ${barColor}88, ${barColor})`,
-            boxShadow: `0 0 6px ${barColor}60`,
-          }}
+          style={{ width: `${pctVal}%`, background: barColor }}
         />
       </div>
       <span className="num w-8 text-right text-2xs text-fg-muted">{pctVal}%</span>

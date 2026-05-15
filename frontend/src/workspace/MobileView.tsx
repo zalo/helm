@@ -134,7 +134,7 @@ export function MobileView() {
             >
               <Icon
                 className={`h-5 w-5 transition-all duration-200
-                  ${active ? "drop-shadow-[0_0_6px_rgba(6,209,243,0.7)]" : ""}`}
+                  ${active ? "drop-shadow-[0_0_6px_rgba(255,128,0,0.6)]" : ""}`}
               />
               <span className="leading-none tracking-wide">{t.label}</span>
             </button>

@@ -5,31 +5,31 @@ import type { ReactNode } from "react";
 import { Loader2, AlertTriangle, Inbox } from "lucide-react";
 import type { ColorType } from "lightweight-charts";
 
-/** Dark chart theme — Abyssal Terminal palette. */
+/** Dark chart theme — OpenBB flat dark palette. */
 export const chartTheme = {
   layout: {
-    background: { type: "solid" as ColorType.Solid, color: "#06121f" },
-    textColor: "#6d8daa",
+    background: { type: "solid" as ColorType.Solid, color: "#1b1b1f" },
+    textColor: "#9a9aa2",
     fontFamily: "JetBrains Mono, IBM Plex Mono, ui-monospace, monospace",
     fontSize: 10,
   },
   grid: {
-    vertLines: { color: "#0b1a2a" },
-    horzLines: { color: "#0b1a2a" },
+    vertLines: { color: "rgba(51,51,55,0.4)" },
+    horzLines: { color: "rgba(51,51,55,0.4)" },
   },
-  rightPriceScale: { borderColor: "#152a42" },
-  timeScale: { borderColor: "#152a42", timeVisible: true, secondsVisible: false },
+  rightPriceScale: { borderColor: "#323237" },
+  timeScale: { borderColor: "#323237", timeVisible: true, secondsVisible: false },
   crosshair: {
-    vertLine: { color: "#1e3d5e", labelBackgroundColor: "#0b1a2a" },
-    horzLine: { color: "#1e3d5e", labelBackgroundColor: "#0b1a2a" },
+    vertLine: { color: "#444448", labelBackgroundColor: "#212126" },
+    horzLine: { color: "#444448", labelBackgroundColor: "#212126" },
   },
 } as const;
 
 export const chartColors = {
-  up:     "#20d47c",
-  down:   "#f0495a",
-  accent: "#06d1f3",
-  volume: "rgba(6,209,243,0.18)",
+  up:     "#25c685",
+  down:   "#f0455a",
+  accent: "#ff8000",
+  volume: "rgba(255,128,0,0.18)",
 } as const;
 
 /** UNIX seconds for a lightweight-charts intraday `time` field. */
