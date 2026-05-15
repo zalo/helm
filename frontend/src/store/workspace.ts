@@ -213,14 +213,13 @@ export const useWorkspace = create<WorkspaceState>()(
       // Pre-v3 stored a single { layout, configs } shape — discard it and
       // reseed the multi-dashboard workspace.
       migrate: (persisted, version) => {
-        if (version < 3 || !persisted) {
-          return {
-            dashboards: SEED_DASHBOARDS,
-            folders: SEED_FOLDERS,
-            activeId: SEED_DASHBOARDS[0].id,
-          };
-        }
-        return persisted as Partial<WorkspaceState>;
+        const fresh = {
+          dashboards: SEED_DASHBOARDS,
+          folders: SEED_FOLDERS,
+          activeId: SEED_DASHBOARDS[0].id,
+        };
+        if (version < 3 || !persisted) return fresh;
+        return persisted as typeof fresh;
       },
     },
   ),
