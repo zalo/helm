@@ -189,7 +189,7 @@ export function Topbar({
       {/* Mobile: compact wordmark. Desktop: dashboard breadcrumb. */}
       {isMobile ? (
         <div className="flex items-center gap-2">
-          <img src="/helm.png" alt="Helm" className="h-6 w-6" />
+          <img src={`${import.meta.env.BASE_URL}helm.png`} alt="Helm" className="h-6 w-6" />
           <span className="text-sm font-bold tracking-tight text-fg">Helm</span>
         </div>
       ) : (
