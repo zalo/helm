@@ -27,8 +27,8 @@ export interface ChartConfig {
 export default function ChartWidget({ config, setConfig }: WidgetProps<ChartConfig>) {
   const instruments = useQuery({ queryKey: ["instruments"], queryFn: api.instruments });
 
-  // Resolve the active instrument: config wins, else first available.
-  const active = config.instrument || instruments.data?.[0]?.symbol || "";
+  // Resolve the active instrument by ID: config wins, else first available.
+  const active = config.instrument || instruments.data?.[0]?.id || "";
 
   const bars = useQuery({
     queryKey: ["bars", active],
@@ -140,7 +140,7 @@ export default function ChartWidget({ config, setConfig }: WidgetProps<ChartConf
             focus:border-accent focus:outline-none"
         >
           {instruments.data?.map((i) => (
-            <option key={i.id} value={i.symbol}>
+            <option key={i.id} value={i.id}>
               {i.symbol} · {i.venue}
             </option>
           ))}

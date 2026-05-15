@@ -61,7 +61,7 @@ export const useWorkspace = create<WorkspaceState>()(
     }),
     {
       name: "helm.workspace",
-      version: 1,
+      version: 2,
       partialize: (s) => ({ configs: s.configs, layout: s.layout }),
     },
   ),

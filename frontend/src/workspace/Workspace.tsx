@@ -86,12 +86,13 @@ function buildDefaultLayout(api: DockviewApi): void {
     bottomAnchor ? { referencePanel: bottomAnchor, direction: "right" } : undefined,
   );
 
-  // One exotic widget to make the desk feel alive — first available.
+  // One exotic widget tabbed alongside Positions so it shares the same panel
+  // group rather than floating over it.
   const exoticType = ["fear-greed", "twitter-feed", "hacker-news", "white-house"].find(
     (t) => getWidget(t),
   );
   if (exoticType && bottomAnchor) {
-    place(exoticType, { referencePanel: bottomAnchor, direction: "right" });
+    place(exoticType, { referencePanel: bottomAnchor, direction: "within" });
   }
 
   // Nothing matched (all bundles still stubs) — drop in whatever exists so the
