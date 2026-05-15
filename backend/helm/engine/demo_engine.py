@@ -347,7 +347,7 @@ class DemoEngine(BaseEngine):
         await asyncio.sleep(3.0)
         try:
             while self._running:
-                if self._ai_enabled:
+                if self._ai_enabled and self.settings.ai_brain_enabled:
                     await self._run_ai_cycle()
                 await asyncio.sleep(self.settings.ai_tick_seconds)
         except asyncio.CancelledError:
@@ -692,3 +692,57 @@ class DemoEngine(BaseEngine):
             self._ai_enabled = True
             await self._set_ai_state(AIState.IDLE)
         return self.get_ai_status()
+
+    # -- agent-driven order ops --------------------------------------------
+    async def submit_order(
+        self,
+        instrument: str,
+        side: str,
+        quantity: float,
+        order_type: str = "MARKET",
+        price: float | None = None,
+    ) -> Order:
+        sim = self._sims.get(instrument)
+        if sim is None:
+            raise ValueError(f"unknown instrument {instrument!r}")
+        last = sim.price if order_type.upper() == "MARKET" or price is None else float(price)
+        os = OrderSide.BUY if side.upper() == "BUY" else OrderSide.SELL
+        # Reuse the existing fill plumbing with a synthetic decision-less call.
+        order = Order(
+            id=f"ord-{uuid.uuid4().hex[:10]}",
+            instrument=instrument,
+            side=os,
+            type=OrderType.MARKET if order_type.upper() == "MARKET" else OrderType.LIMIT,
+            status=OrderStatus.FILLED,
+            quantity=quantity,
+            filled_qty=quantity,
+            price=round(last, 6),
+            avg_px=round(last, 6),
+            ts=datetime.now(timezone.utc),
+            strategy="agent-cli",
+        )
+        self._orders.append(order)
+        self.events.publish_nowait("order", order.model_dump(mode="json"))
+        self._apply_fill(instrument, os, quantity, last, order)
+        return order
+
+    async def cancel_order(self, order_id: str) -> bool:
+        # Demo orders fill synchronously — nothing to cancel. Treat as no-op.
+        for o in self._orders:
+            if o.id == order_id and o.status not in (OrderStatus.FILLED, OrderStatus.CANCELED):
+                o.status = OrderStatus.CANCELED
+                self.events.publish_nowait("order", o.model_dump(mode="json"))
+                return True
+        return False
+
+    async def close_position(self, instrument: str) -> Order | None:
+        pos = self._positions.get(instrument)
+        if pos is None or pos.side is PositionSide.FLAT:
+            return None
+        sim = self._sims.get(instrument)
+        if sim is None:
+            return None
+        before = len(self._orders)
+        self._close_position(instrument, sim.price, None)
+        # The synthetic order from _close_position is the last appended.
+        return self._orders[-1] if len(self._orders) > before else None

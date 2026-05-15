@@ -80,11 +80,12 @@ async def health() -> HealthResponse:
 # Routers are mounted lazily so a failure in one feature area does not take down
 # the whole app during early development.
 def _mount_routers() -> None:
-    from helm.api import routes_ai, routes_feeds, routes_trading, websocket
+    from helm.api import routes_agent, routes_ai, routes_feeds, routes_trading, websocket
 
     app.include_router(routes_trading.router, prefix="/api/trading", tags=["trading"])
     app.include_router(routes_ai.router, prefix="/api/ai", tags=["ai"])
     app.include_router(routes_feeds.router, prefix="/api/feeds", tags=["feeds"])
+    app.include_router(routes_agent.router, prefix="/api/agent", tags=["agent"])
     app.include_router(websocket.router, tags=["ws"])
 
 

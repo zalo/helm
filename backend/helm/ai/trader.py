@@ -38,6 +38,7 @@ def build_ai_trader_strategy(
     instrument_ids: list[Any],
     tick_seconds: float,
     trade_size_fraction: float = 0.08,
+    brain_enabled: bool = True,
 ):
     """Factory for an `AITraderStrategy` instance.
 
@@ -57,6 +58,7 @@ def build_ai_trader_strategy(
             self._instrument_ids = instrument_ids
             self._tick_seconds = tick_seconds
             self._trade_size_fraction = trade_size_fraction
+            self._brain_enabled = brain_enabled
             self._brain = AIBrain(seed=42)
             self._timer_name = "ai-trader-tick"
 
@@ -84,16 +86,22 @@ def build_ai_trader_strategy(
                     self.subscribe_bars(bar_type)
                 except Exception:  # pragma: no cover - defensive
                     log.debug("AITrader: could not subscribe bars for %s", instrument_id)
-            try:
-                from datetime import timedelta
+            if self._brain_enabled:
+                try:
+                    from datetime import timedelta
 
-                self.clock.set_timer(
-                    name=self._timer_name,
-                    interval=timedelta(seconds=self._tick_seconds),
-                    callback=self._on_timer,
+                    self.clock.set_timer(
+                        name=self._timer_name,
+                        interval=timedelta(seconds=self._tick_seconds),
+                        callback=self._on_timer,
+                    )
+                except Exception:  # pragma: no cover - defensive
+                    log.exception("AITrader: failed to register timer")
+            else:
+                log.info(
+                    "AITrader: brain timer disabled (HELM_AI_BRAIN_ENABLED=false); "
+                    "strategy is loaded only as the helm-agent CLI's order conduit."
                 )
-            except Exception:  # pragma: no cover - defensive
-                log.exception("AITrader: failed to register timer")
 
         def on_stop(self) -> None:  # noqa: D401 - Nautilus hook
             try:

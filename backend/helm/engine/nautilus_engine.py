@@ -119,24 +119,34 @@ def map_bar(bar: Any) -> dict[str, Any] | None:
         return None
 
 
+def _enum_name(obj: Any) -> str:
+    """Return the symbolic name of a Nautilus IntEnum (or repr-derived fallback)."""
+    if obj is None:
+        return ""
+    name = getattr(obj, "name", "")
+    if name:
+        return name.upper()
+    return repr(obj).upper()
+
+
 def map_order(order: Any) -> dict[str, Any] | None:
     try:
-        side_raw = str(getattr(order, "side", "")).upper()
-        side = OrderSide.BUY if "BUY" in side_raw else OrderSide.SELL
+        side_name = _enum_name(getattr(order, "side", None))
+        side = OrderSide.BUY if "BUY" in side_name else OrderSide.SELL
 
-        type_raw = str(getattr(order, "order_type", "")).upper()
-        if "STOP" in type_raw and "LIMIT" in type_raw:
+        type_name = _enum_name(getattr(order, "order_type", None))
+        if "STOP" in type_name and "LIMIT" in type_name:
             otype = OrderType.STOP_LIMIT
-        elif "STOP" in type_raw:
+        elif "STOP" in type_name:
             otype = OrderType.STOP_MARKET
-        elif "LIMIT" in type_raw:
+        elif "LIMIT" in type_name:
             otype = OrderType.LIMIT
         else:
             otype = OrderType.MARKET
 
-        status_raw = str(getattr(order, "status", "")).upper()
+        status_name = _enum_name(getattr(order, "status", None))
         try:
-            status = OrderStatus(status_raw)
+            status = OrderStatus(status_name)
         except ValueError:
             status = OrderStatus.INITIALIZED
 
@@ -162,10 +172,10 @@ def map_order(order: Any) -> dict[str, Any] | None:
 
 def map_position(position: Any) -> dict[str, Any] | None:
     try:
-        side_raw = str(getattr(position, "side", "")).upper()
-        if "LONG" in side_raw:
+        side_name = _enum_name(getattr(position, "side", None))
+        if "LONG" in side_name:
             side = PositionSide.LONG
-        elif "SHORT" in side_raw:
+        elif "SHORT" in side_name:
             side = PositionSide.SHORT
         else:
             side = PositionSide.FLAT
@@ -396,6 +406,7 @@ class NautilusEngine(BaseEngine):
                 decisions=self._decisions,
                 instrument_ids=instrument_ids,
                 tick_seconds=self.settings.ai_tick_seconds,
+                brain_enabled=self.settings.ai_brain_enabled,
             )
             node.trader.add_strategy(strategy)
 
@@ -610,3 +621,106 @@ class NautilusEngine(BaseEngine):
             "ai_status", self.get_ai_status().model_dump(mode="json")
         )
         return self.get_ai_status()
+
+    # -- agent-driven order ops --------------------------------------------
+    def _agent_strategy(self) -> Any:
+        """Return the running strategy that can submit/cancel/close.
+
+        We route agent calls through the AITraderStrategy so its order_factory
+        is the issuer — keeps order ids and OMS attribution consistent.
+        """
+        if self._node is None:
+            return None
+        strategies = list(self._node.trader.strategies())
+        return strategies[0] if strategies else None
+
+    async def submit_order(
+        self,
+        instrument: str,
+        side: str,
+        quantity: float,
+        order_type: str = "MARKET",
+        price: float | None = None,
+    ) -> Order:
+        strategy = self._agent_strategy()
+        if strategy is None:
+            raise RuntimeError("engine is not running; no strategy available")
+        from nautilus_trader.model.enums import OrderSide
+        from nautilus_trader.model.identifiers import InstrumentId
+
+        instrument_id = InstrumentId.from_str(instrument)
+        instr = self._cache.instrument(instrument_id) if self._cache else None
+        if instr is None:
+            raise ValueError(f"instrument {instrument!r} not loaded; add it via HELM_INSTRUMENTS and restart")
+        os = OrderSide.BUY if side.upper() == "BUY" else OrderSide.SELL
+        qty = instr.make_qty(quantity)
+        if order_type.upper() == "LIMIT":
+            if price is None:
+                raise ValueError("limit order requires --price")
+            px = instr.make_price(float(price))
+            order = strategy.order_factory.limit(
+                instrument_id=instrument_id, order_side=os, quantity=qty, price=px,
+            )
+        else:
+            order = strategy.order_factory.market(
+                instrument_id=instrument_id, order_side=os, quantity=qty,
+            )
+        strategy.submit_order(order)
+        return Order(
+            id=str(order.client_order_id),
+            instrument=instrument,
+            side="BUY" if os == OrderSide.BUY else "SELL",
+            type=order_type.upper(),
+            status="SUBMITTED",
+            quantity=float(quantity),
+            filled_qty=0.0,
+            price=float(price) if price is not None else None,
+            avg_px=None,
+            ts=datetime.now(timezone.utc),
+            strategy=self.settings.strategy_name,
+        )
+
+    async def cancel_order(self, order_id: str) -> bool:
+        strategy = self._agent_strategy()
+        if strategy is None or self._cache is None:
+            return False
+        from nautilus_trader.model.identifiers import ClientOrderId
+
+        client_id = ClientOrderId(order_id)
+        order = self._cache.order(client_id)
+        if order is None or order.is_closed:
+            return False
+        with contextlib.suppress(Exception):
+            strategy.cancel_order(order)
+            return True
+        return False
+
+    async def close_position(self, instrument: str) -> Order | None:
+        strategy = self._agent_strategy()
+        if strategy is None or self._cache is None:
+            return None
+        from nautilus_trader.model.identifiers import InstrumentId
+
+        instrument_id = InstrumentId.from_str(instrument)
+        position = None
+        for pos in self._cache.positions_open(instrument_id=instrument_id):
+            position = pos
+            break
+        if position is None:
+            return None
+        with contextlib.suppress(Exception):
+            strategy.close_position(position)
+        # Closing fires async; report a synthetic acknowledgement order.
+        return Order(
+            id=str(position.id),
+            instrument=instrument,
+            side="SELL" if str(position.side) == "LONG" else "BUY",
+            type="MARKET",
+            status="SUBMITTED",
+            quantity=float(position.quantity),
+            filled_qty=0.0,
+            price=None,
+            avg_px=None,
+            ts=datetime.now(timezone.utc),
+            strategy=self.settings.strategy_name,
+        )

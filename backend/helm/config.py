@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     # --- AI trader cadence ---
     ai_tick_seconds: float = 8.0  # how often the trader re-evaluates
     ai_autostart: bool = True
+    # When false, the in-process AIBrain timer never fires — the strategy is
+    # kept loaded only as the order-submission conduit for the helm-agent CLI.
+    # An external agent (e.g. Claude Code via helm-agent) makes decisions.
+    ai_brain_enabled: bool = False
 
     # --- Venue credentials (only used when mode != demo) ---
     binance_api_key: str | None = None

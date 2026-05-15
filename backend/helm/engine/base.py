@@ -76,3 +76,20 @@ class BaseEngine(abc.ABC):
 
     @abc.abstractmethod
     async def ai_control(self, request: AIControlRequest) -> AITraderStatus: ...
+
+    # --- order operations (agent-driven) ----------------------------------
+    @abc.abstractmethod
+    async def submit_order(
+        self,
+        instrument: str,
+        side: str,                  # "BUY" | "SELL"
+        quantity: float,
+        order_type: str = "MARKET",  # "MARKET" | "LIMIT"
+        price: float | None = None,
+    ) -> Order: ...
+
+    @abc.abstractmethod
+    async def cancel_order(self, order_id: str) -> bool: ...
+
+    @abc.abstractmethod
+    async def close_position(self, instrument: str) -> Order | None: ...
