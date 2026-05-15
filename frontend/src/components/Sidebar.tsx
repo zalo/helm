@@ -151,7 +151,7 @@ export function Sidebar({
           collapsed ? "justify-center px-0" : "gap-2 px-3",
         )}
       >
-        <img src="/helm.svg" alt="Helm" className="h-5 w-5 flex-shrink-0" />
+        <img src="/helm.png" alt="Helm" className="h-6 w-6 flex-shrink-0" />
         {!collapsed && (
           <span className="text-sm font-bold tracking-tight text-fg">Helm</span>
         )}
