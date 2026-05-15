@@ -670,54 +670,471 @@ export class DemoSimulator {
 
     this.seedStarterPositions();
     this.backfillDecisions();
+    this.backfillEquityCurve();
   }
 
   // -- seeding ----------------------------------------------------------------
+  /** Open positions seeded into the demo so the trader desk has live P&L on load. */
   private seedStarterPositions(): void {
-    const openedAt = new Date(Date.now() - 42 * 60_000).toISOString();
-    const starters: [string, PositionSide, number][] = [
-      ["AAPL.NASDAQ", "LONG", 120.0],
-      ["BTCUSDT.BINANCE", "LONG", 0.35],
+    interface Starter {
+      spec: string;
+      side: PositionSide;
+      qty: number;
+      /** avg_px = last_px * avgMul (>1 → underwater long / profitable short). */
+      avgMul: number;
+      /** Minutes ago the position was opened. */
+      openedMinAgo: number;
+    }
+    const starters: Starter[] = [
+      { spec: "AAPL.NASDAQ",     side: "LONG",  qty: 120,  avgMul: 0.985, openedMinAgo: 42 },
+      { spec: "BTCUSDT.BINANCE", side: "LONG",  qty: 0.35, avgMul: 0.985, openedMinAgo: 42 },
+      { spec: "TSLA.NASDAQ",     side: "SHORT", qty: 60,   avgMul: 1.008, openedMinAgo: 22 },
     ];
-    for (const [spec, side, qty] of starters) {
-      const sim = this.sims.get(spec);
+    for (const s of starters) {
+      const sim = this.sims.get(s.spec);
       if (!sim) continue;
       const last = sim.price;
-      const avg = last * (side === "LONG" ? 0.985 : 1.015);
-      const direction = side === "LONG" ? 1.0 : -1.0;
+      const avg = last * s.avgMul;
+      const direction = s.side === "LONG" ? 1.0 : -1.0;
       const pos: Position = {
         id: uid("pos"),
-        instrument: spec,
-        side,
-        quantity: qty,
+        instrument: s.spec,
+        side: s.side,
+        quantity: s.qty,
         avg_px: round(avg, 6),
         last_px: round(last, 6),
-        market_value: round(last * qty, 2),
-        unrealized_pnl: round((last - avg) * qty * direction, 2),
+        market_value: round(last * s.qty, 2),
+        unrealized_pnl: round((last - avg) * s.qty * direction, 2),
         realized_pnl: 0.0,
-        opened_at: openedAt,
+        opened_at: new Date(Date.now() - s.openedMinAgo * 60_000).toISOString(),
         strategy: STRATEGY_NAME,
       };
-      this.positions.set(spec, pos);
+      this.positions.set(s.spec, pos);
       this.account.used += Math.abs(pos.market_value);
     }
     this.recomputeAccount();
-    this.equityCurve.push({ ts: isoNow(), equity: this.account.equity });
   }
 
-  /** Backfill a handful of past AI decisions so the feed isn't empty on load. */
+  /** Lookup a plausible historical price for `spec` `ageMin` minutes ago. */
+  private priceAt(spec: string, ageMin: number): number {
+    const sim = this.sims.get(spec);
+    if (!sim) return 100.0;
+    const bars = sim.bars;
+    if (!bars.length) return sim.price;
+    const idx = Math.max(0, Math.min(bars.length - 1, bars.length - 1 - ageMin));
+    return bars[idx].close;
+  }
+
+  /**
+   * Backfill ~2 hours of synthetic equity curve so the PnL widget renders a
+   * meaningful arc and `sharpe`/`maxDrawdownPct` have signal to compute from.
+   */
+  private backfillEquityCurve(): void {
+    const points: EquityPoint[] = [];
+    const start = STARTING_EQUITY;
+    const end = this.account.equity;
+    const peak    = start * 1.0145;   // mid-window high
+    const trough  = start * 0.9905;   // late-window low → real drawdown
+    const peakAt   = 0.42;
+    const troughAt = 0.74;
+    const minutes = 120;
+    const now = Date.now();
+    for (let i = minutes; i >= 0; i--) {
+      const t = 1 - i / minutes;
+      let base: number;
+      if (t < peakAt) {
+        const k = t / peakAt;
+        base = start * 0.997 + (peak - start * 0.997) * k;
+      } else if (t < troughAt) {
+        const k = (t - peakAt) / (troughAt - peakAt);
+        base = peak + (trough - peak) * k;
+      } else {
+        const k = (t - troughAt) / (1 - troughAt);
+        base = trough + (end - trough) * k;
+      }
+      const jitter = (this.rng() - 0.5) * start * 0.0012;
+      const equity = round(base + jitter, 2);
+      points.push({ ts: new Date(now - i * 60_000).toISOString(), equity });
+      this.equityPeak = Math.max(this.equityPeak, equity);
+    }
+    this.equityCurve = points;
+  }
+
+  /**
+   * Hand-curated history of AI decisions + matching filled orders so the demo
+   * has a credible story on first load — opens for current positions, a few
+   * closed trades with realized P&L, a rejected order, a stale skip, and one
+   * fresh proposed idea sitting at the top of the feed.
+   */
   private backfillDecisions(): void {
-    const barsByInstrument: Record<string, Bar[]> = {};
-    for (const [spec, sim] of this.sims) barsByInstrument[spec] = sim.allBars();
-    const positions = [...this.positions.values()];
-    for (let i = 6; i > 0; i--) {
-      const decision = this.brain.evaluate(barsByInstrument, positions);
-      if (!decision) break;
-      // Stamp it into the past so it reads like history.
-      decision.ts = new Date(Date.now() - i * 90_000).toISOString();
-      decision.status = decision.action === "HOLD" ? "skipped" : "executed";
+    interface Seed {
+      ageMin: number;
+      instrument: string;
+      action: AIAction;
+      confidence: number;
+      thesis: string;
+      reasoning: string;
+      signals: AISignal[];
+      status: AIDecision["status"];
+      /** Realized P&L attributed to this decision (positive=win, negative=loss). */
+      realized_pnl: number | null;
+      /** Whether to emit a matching Order. */
+      emitOrder: boolean;
+      /** Order quantity override; else derived from notional. */
+      qty?: number;
+      /** Order side override (else BUY for BUY/REBALANCE, SELL otherwise). */
+      orderSide?: OrderSide;
+      /** Order status override (else FILLED). */
+      orderStatus?: Order["status"];
+    }
+
+    const sig = (
+      label: string,
+      value: string,
+      sentiment: SignalSentiment,
+      source = "price-action",
+    ): AISignal => ({ label, value, sentiment, source });
+
+    const SEEDS: Seed[] = [
+      // ============ 1. Fresh proposed BUY at the top of the feed ============
+      {
+        ageMin: 1,
+        instrument: "ETHUSDT.BINANCE",
+        action: "BUY",
+        confidence: 0.74,
+        thesis: "Long ETHUSDT — momentum skew, blended score +0.38.",
+        reasoning:
+          "For ETHUSDT: RSI(14) at **58.7** is neutral, and recent momentum is running **+0.41%** per bar. " +
+          "Volatility is **calm**, supporting a normal-conviction read. " +
+          "Social chatter scores **+0.39** (crowd leaning bullish). " +
+          "A macro headline is live — _CPI print lands below consensus_ — which I weighted into the blend. " +
+          "Net blended score of **+0.38** clears my entry threshold; opening a long exposure in ETHUSDT.",
+        signals: [
+          sig("Momentum(10)", "+0.41%", "bullish"),
+          sig("RSI(14)", "58.7", "neutral"),
+          sig("Volatility regime", "0.21% (calm)", "neutral"),
+          sig("X chatter", "+0.39", "bullish", "twitter-feed"),
+          sig("Macro headline", "CPI print lands below consensus", "bullish", "news-wire"),
+        ],
+        status: "proposed",
+        realized_pnl: null,
+        emitOrder: false,
+      },
+      // ============ 2. Recent winning close: NVDA short covered ============
+      {
+        ageMin: 8,
+        instrument: "NVDA.NASDAQ",
+        action: "SELL",
+        confidence: 0.69,
+        thesis: "Short NVDA — RSI mean-reversion, blended score −0.36.",
+        reasoning:
+          "For NVDA: RSI(14) at **74.3** is overbought, and recent momentum is running **+0.18%** per bar. " +
+          "Volatility is **calm**, supporting a normal-conviction read. " +
+          "Social chatter scores **+0.08** (crowd indifferent). " +
+          "Net blended score of **−0.36** clears my entry threshold; opening a short exposure in NVDA. " +
+          "_Covered at +$140 a few minutes later — RSI flushed below 70._",
+        signals: [
+          sig("Momentum(10)", "+0.18%", "neutral"),
+          sig("RSI(14)", "74.3", "bearish"),
+          sig("X chatter", "+0.08", "neutral", "twitter-feed"),
+        ],
+        status: "executed",
+        realized_pnl: 140.0,
+        emitOrder: true,
+        qty: 80,
+        orderSide: "SELL",
+      },
+      // ============ 3. Open current TSLA short (22 min ago) ============
+      {
+        ageMin: 22,
+        instrument: "TSLA.NASDAQ",
+        action: "SELL",
+        confidence: 0.66,
+        thesis: "Short TSLA — momentum skew, blended score −0.32.",
+        reasoning:
+          "For TSLA: RSI(14) at **38.4** is neutral, and recent momentum is running **−0.27%** per bar. " +
+          "Volatility is **elevated**, so I'm sizing conviction down. " +
+          "Social chatter scores **−0.21** (crowd leaning bearish). " +
+          "Net blended score of **−0.32** clears my entry threshold; opening a short exposure in TSLA.",
+        signals: [
+          sig("Momentum(10)", "−0.27%", "bearish"),
+          sig("RSI(14)", "38.4", "neutral"),
+          sig("Volatility regime", "0.51% (elevated)", "neutral"),
+          sig("X chatter", "−0.21", "bearish", "twitter-feed"),
+        ],
+        status: "executed",
+        realized_pnl: null,
+        emitOrder: true,
+        qty: 60,
+        orderSide: "SELL",
+      },
+      // ============ 4. HOLD/skipped — score in the no-trade band ============
+      {
+        ageMin: 32,
+        instrument: "AAPL.NASDAQ",
+        action: "HOLD",
+        confidence: 0.39,
+        thesis: "No edge on AAPL — signals mixed, standing aside.",
+        reasoning:
+          "For AAPL: RSI(14) at **52.1** is neutral, and recent momentum is running **+0.08%** per bar. " +
+          "Volatility is **calm**, supporting a normal-conviction read. " +
+          "Social chatter scores **+0.04** (crowd indifferent). " +
+          "The blended score is only **+0.11** — inside my no-trade band, so the highest-EV move is to wait for confirmation.",
+        signals: [
+          sig("Momentum(10)", "+0.08%", "neutral"),
+          sig("RSI(14)", "52.1", "neutral"),
+          sig("X chatter", "+0.04", "neutral", "twitter-feed"),
+        ],
+        status: "skipped",
+        realized_pnl: null,
+        emitOrder: false,
+      },
+      // ============ 5. Open current AAPL long (42 min ago) ============
+      {
+        ageMin: 42,
+        instrument: "AAPL.NASDAQ",
+        action: "BUY",
+        confidence: 0.72,
+        thesis: "Long AAPL — momentum skew, blended score +0.43.",
+        reasoning:
+          "For AAPL: RSI(14) at **46.8** is neutral, and recent momentum is running **+0.31%** per bar. " +
+          "Volatility is **calm**, supporting a normal-conviction read. " +
+          "Social chatter scores **+0.34** (crowd leaning bullish). " +
+          "A macro headline is live — _Fed minutes signal dovish tilt_ — which I weighted into the blend. " +
+          "Net blended score of **+0.43** clears my entry threshold; opening a long exposure in AAPL.",
+        signals: [
+          sig("Momentum(10)", "+0.31%", "bullish"),
+          sig("RSI(14)", "46.8", "neutral"),
+          sig("X chatter", "+0.34", "bullish", "twitter-feed"),
+          sig("Macro headline", "Fed minutes signal dovish tilt", "bullish", "news-wire"),
+        ],
+        status: "executed",
+        realized_pnl: null,
+        emitOrder: true,
+        qty: 120,
+        orderSide: "BUY",
+      },
+      // ============ 6. Open current BTCUSDT long (42 min ago) ============
+      {
+        ageMin: 42,
+        instrument: "BTCUSDT.BINANCE",
+        action: "BUY",
+        confidence: 0.78,
+        thesis: "Long BTCUSDT — momentum skew, blended score +0.51.",
+        reasoning:
+          "For BTCUSDT: RSI(14) at **63.4** is neutral, and recent momentum is running **+0.58%** per bar. " +
+          "Volatility is **elevated**, so I'm sizing conviction down. " +
+          "Social chatter scores **+0.46** (crowd leaning bullish). " +
+          "A macro headline is live — _Fed minutes signal dovish tilt_ — which I weighted into the blend. " +
+          "Net blended score of **+0.51** clears my entry threshold; opening a long exposure in BTCUSDT.",
+        signals: [
+          sig("Momentum(10)", "+0.58%", "bullish"),
+          sig("RSI(14)", "63.4", "neutral"),
+          sig("Volatility regime", "0.47% (elevated)", "neutral"),
+          sig("X chatter", "+0.46", "bullish", "twitter-feed"),
+          sig("Macro headline", "Fed minutes signal dovish tilt", "bullish", "news-wire"),
+        ],
+        status: "executed",
+        realized_pnl: null,
+        emitOrder: true,
+        qty: 0.35,
+        orderSide: "BUY",
+      },
+      // ============ 7. Closed earlier AAPL long for +$640 ============
+      {
+        ageMin: 75,
+        instrument: "AAPL.NASDAQ",
+        action: "BUY",
+        confidence: 0.81,
+        thesis: "Long AAPL — momentum skew, blended score +0.62.",
+        reasoning:
+          "For AAPL: RSI(14) at **41.2** is neutral, and recent momentum is running **+0.44%** per bar. " +
+          "Volatility is **calm**, supporting a normal-conviction read. " +
+          "Social chatter scores **+0.51** (crowd leaning bullish). " +
+          "Net blended score of **+0.62** clears my entry threshold; opening a long exposure in AAPL. " +
+          "_Closed at +$640 once RSI pushed back above 65._",
+        signals: [
+          sig("Momentum(10)", "+0.44%", "bullish"),
+          sig("RSI(14)", "41.2", "neutral"),
+          sig("X chatter", "+0.51", "bullish", "twitter-feed"),
+        ],
+        status: "executed",
+        realized_pnl: 640.0,
+        emitOrder: true,
+        qty: 110,
+        orderSide: "BUY",
+      },
+      // ============ 8. Losing trade: NVDA long, exited at −$185 ============
+      {
+        ageMin: 95,
+        instrument: "NVDA.NASDAQ",
+        action: "BUY",
+        confidence: 0.58,
+        thesis: "Long NVDA — momentum skew, blended score +0.28.",
+        reasoning:
+          "For NVDA: RSI(14) at **64.7** is neutral, and recent momentum is running **+0.22%** per bar. " +
+          "Volatility is **elevated**, so I'm sizing conviction down. " +
+          "Social chatter scores **+0.18** (crowd leaning bullish). " +
+          "Net blended score of **+0.28** clears my entry threshold; opening a long exposure in NVDA. " +
+          "_Stopped out at −$185 after the score flipped on a sentiment reversal._",
+        signals: [
+          sig("Momentum(10)", "+0.22%", "bullish"),
+          sig("RSI(14)", "64.7", "neutral"),
+          sig("X chatter", "+0.18", "bullish", "twitter-feed"),
+        ],
+        status: "executed",
+        realized_pnl: -185.0,
+        emitOrder: true,
+        qty: 75,
+        orderSide: "BUY",
+      },
+      // ============ 9. Closed earlier ETHUSDT long for +$240 ============
+      {
+        ageMin: 110,
+        instrument: "ETHUSDT.BINANCE",
+        action: "BUY",
+        confidence: 0.7,
+        thesis: "Long ETHUSDT — momentum skew, blended score +0.4.",
+        reasoning:
+          "For ETHUSDT: RSI(14) at **57.9** is neutral, and recent momentum is running **+0.35%** per bar. " +
+          "Volatility is **calm**, supporting a normal-conviction read. " +
+          "Social chatter scores **+0.42** (crowd leaning bullish). " +
+          "Net blended score of **+0.40** clears my entry threshold; opening a long exposure in ETHUSDT. " +
+          "_Took profit at +$240 — momentum stalled into resistance._",
+        signals: [
+          sig("Momentum(10)", "+0.35%", "bullish"),
+          sig("RSI(14)", "57.9", "neutral"),
+          sig("X chatter", "+0.42", "bullish", "twitter-feed"),
+        ],
+        status: "executed",
+        realized_pnl: 240.0,
+        emitOrder: true,
+        qty: 2.4,
+        orderSide: "BUY",
+      },
+      // ============ 10. Order rejected — risk check failure ============
+      {
+        ageMin: 130,
+        instrument: "TSLA.NASDAQ",
+        action: "BUY",
+        confidence: 0.56,
+        thesis: "Long TSLA — momentum skew, blended score +0.27.",
+        reasoning:
+          "For TSLA: RSI(14) at **47.6** is neutral, and recent momentum is running **+0.19%** per bar. " +
+          "Volatility is **elevated**, so I'm sizing conviction down. " +
+          "Social chatter scores **+0.22** (crowd leaning bullish). " +
+          "Net blended score of **+0.27** clears my entry threshold; opening a long exposure in TSLA. " +
+          "_Risk check rejected the fill — single-name exposure cap hit. Will re-evaluate at next tick._",
+        signals: [
+          sig("Momentum(10)", "+0.19%", "bullish"),
+          sig("RSI(14)", "47.6", "neutral"),
+          sig("X chatter", "+0.22", "bullish", "twitter-feed"),
+        ],
+        status: "rejected",
+        realized_pnl: null,
+        emitOrder: true,
+        qty: 50,
+        orderSide: "BUY",
+        orderStatus: "REJECTED",
+      },
+      // ============ 11. Closed earlier BTCUSDT long for +$320 ============
+      {
+        ageMin: 155,
+        instrument: "BTCUSDT.BINANCE",
+        action: "BUY",
+        confidence: 0.73,
+        thesis: "Long BTCUSDT — momentum skew, blended score +0.47.",
+        reasoning:
+          "For BTCUSDT: RSI(14) at **55.3** is neutral, and recent momentum is running **+0.49%** per bar. " +
+          "Volatility is **elevated**, so I'm sizing conviction down. " +
+          "Social chatter scores **+0.37** (crowd leaning bullish). " +
+          "Net blended score of **+0.47** clears my entry threshold; opening a long exposure in BTCUSDT. " +
+          "_Closed at +$320 — took profit ahead of CPI._",
+        signals: [
+          sig("Momentum(10)", "+0.49%", "bullish"),
+          sig("RSI(14)", "55.3", "neutral"),
+          sig("Volatility regime", "0.43% (elevated)", "neutral"),
+          sig("X chatter", "+0.37", "bullish", "twitter-feed"),
+        ],
+        status: "executed",
+        realized_pnl: 320.0,
+        emitOrder: true,
+        qty: 0.28,
+        orderSide: "BUY",
+      },
+      // ============ 12. Older HOLD/skipped EURUSD ============
+      {
+        ageMin: 180,
+        instrument: "EURUSD.SIM",
+        action: "HOLD",
+        confidence: 0.32,
+        thesis: "No edge on EURUSD — signals mixed, standing aside.",
+        reasoning:
+          "For EURUSD: RSI(14) at **49.4** is neutral, and recent momentum is running **+0.03%** per bar. " +
+          "Volatility is **calm**, supporting a normal-conviction read. " +
+          "Social chatter scores **−0.07** (crowd indifferent). " +
+          "The blended score is only **+0.04** — inside my no-trade band, so the highest-EV move is to wait for confirmation.",
+        signals: [
+          sig("Momentum(10)", "+0.03%", "neutral"),
+          sig("RSI(14)", "49.4", "neutral"),
+          sig("X chatter", "−0.07", "neutral", "twitter-feed"),
+        ],
+        status: "skipped",
+        realized_pnl: null,
+        emitOrder: false,
+      },
+    ];
+
+    // Walk newest → oldest, but append oldest-first so DecisionStore order is
+    // chronological (the widget reverses it for display).
+    for (const s of [...SEEDS].reverse()) {
+      const ts = new Date(Date.now() - s.ageMin * 60_000).toISOString();
+      const decision: AIDecision = {
+        id: uid("dec"),
+        ts,
+        action: s.action,
+        instrument: s.instrument,
+        confidence: s.confidence,
+        thesis: s.thesis,
+        reasoning: s.reasoning,
+        signals: s.signals,
+        order_id: null,
+        status: s.status,
+        realized_pnl: s.realized_pnl,
+      };
+
+      if (s.emitOrder && this.sims.has(s.instrument)) {
+        const px = this.priceAt(s.instrument, s.ageMin);
+        const side: OrderSide =
+          s.orderSide ?? (s.action === "BUY" ? "BUY" : "SELL");
+        const qty =
+          s.qty ?? Math.max(1, (STARTING_EQUITY * TRADE_SIZE_FRACTION) / px);
+        const status = s.orderStatus ?? "FILLED";
+        const order: Order = {
+          id: uid("ord"),
+          instrument: s.instrument,
+          side,
+          type: "MARKET",
+          status,
+          quantity: qty,
+          filled_qty: status === "FILLED" ? qty : 0,
+          price: round(px, 6),
+          avg_px: status === "FILLED" ? round(px, 6) : null,
+          ts,
+          strategy: STRATEGY_NAME,
+        };
+        this.orders.push(order);
+        decision.order_id = order.id;
+      }
+
+      if (s.realized_pnl !== null) {
+        this.realizedPnl += s.realized_pnl;
+        this.account.balance += s.realized_pnl;
+      }
+
       this.decisions.append(decision);
     }
+    this.recomputeAccount();
   }
 
   // -- lifecycle --------------------------------------------------------------
@@ -737,7 +1154,7 @@ export class DemoSimulator {
       if (!this.running) return;
       this.aiLoop();
       this.timers.push(setInterval(() => this.aiLoop(), AI_TICK_SECONDS * 1000));
-    }, 3000);
+    }, 1200);
   }
 
   stop(): void {
@@ -1031,23 +1448,35 @@ export class DemoSimulator {
   }
 
   // -- metrics ----------------------------------------------------------------
+  /**
+   * Annualised Sharpe over the equity curve. Annualisation factor is derived
+   * from the *observed* median spacing between curve points so the formula
+   * stays correct whether points are seconds, minutes, or hours apart — the
+   * backfilled history is sparser than the live `PORTFOLIO_EVERY` cadence.
+   */
   private sharpe(): number {
     const pts = this.equityCurve;
     if (pts.length < 3) return 0.0;
     const rets: number[] = [];
+    const dts: number[] = [];
     for (let i = 1; i < pts.length; i++) {
       const prev = pts[i - 1].equity;
       if (prev) rets.push((pts[i].equity - prev) / prev);
+      const dt =
+        new Date(pts[i].ts).getTime() - new Date(pts[i - 1].ts).getTime();
+      if (dt > 0) dts.push(dt);
     }
-    if (rets.length < 2) return 0.0;
+    if (rets.length < 2 || dts.length === 0) return 0.0;
     const mean = rets.reduce((a, b) => a + b, 0) / rets.length;
     const variance =
       rets.reduce((a, r) => a + (r - mean) ** 2, 0) / (rets.length - 1);
     const std = Math.sqrt(variance);
     if (std === 0) return 0.0;
-    const dailySamples = (24 * 3600) / (TICK_SECONDS * PORTFOLIO_EVERY);
+    const sortedDts = [...dts].sort((a, b) => a - b);
+    const medianDtMs = sortedDts[Math.floor(sortedDts.length / 2)];
+    const dailySamples = 86_400_000 / medianDtMs;
     const sh = (mean / std) * Math.sqrt(dailySamples);
-    return round(clamp(sh, -10.0, 10.0), 3);
+    return round(clamp(sh, -5.0, 5.0), 2);
   }
 
   private maxDrawdownPct(): number {

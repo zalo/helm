@@ -8,7 +8,7 @@
 
 import { useState } from "react";
 import {
-  LayoutDashboard, Wallet, Globe, Bitcoin, Plus, FolderPlus,
+  LayoutDashboard, Wallet, Globe, Bitcoin, Newspaper, Plus, FolderPlus,
   LayoutGrid, Sparkles, ChevronLeft, ChevronRight, ChevronDown,
   MoreHorizontal, Folder as FolderIcon, Github, Pencil, Copy, Trash2,
 } from "lucide-react";
@@ -19,7 +19,7 @@ import { cn } from "@/lib/cn";
 // --- dashboard icon resolution ----------------------------------------------
 
 const ICONS: Record<string, LucideIcon> = {
-  LayoutDashboard, Wallet, Globe, Bitcoin,
+  LayoutDashboard, Wallet, Globe, Bitcoin, Newspaper,
 };
 const iconFor = (name: string): LucideIcon => ICONS[name] ?? LayoutDashboard;
 

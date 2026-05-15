@@ -70,6 +70,7 @@ const SEED_DASHBOARDS: Dashboard[] = [
   { id: "dash-desk",     name: "AI Trader Desk",     folderId: "fld-trading",  icon: "LayoutDashboard", layout: null, configs: {} },
   { id: "dash-risk",     name: "Positions & Risk",   folderId: "fld-trading",  icon: "Wallet",          layout: null, configs: {} },
   { id: "dash-macro",    name: "Macro & Sentiment",  folderId: "fld-research", icon: "Globe",           layout: null, configs: {} },
+  { id: "dash-news",     name: "News & Social",      folderId: "fld-research", icon: "Newspaper",       layout: null, configs: {} },
   { id: "dash-crypto",   name: "Crypto Watch",       folderId: "fld-research", icon: "Bitcoin",         layout: null, configs: {} },
 ];
 
@@ -204,21 +205,21 @@ export const useWorkspace = create<WorkspaceState>()(
     }),
     {
       name: "helm.workspace",
-      version: 3,
+      version: 4,
       partialize: (s) => ({
         dashboards: s.dashboards,
         folders: s.folders,
         activeId: s.activeId,
       }),
-      // Pre-v3 stored a single { layout, configs } shape — discard it and
-      // reseed the multi-dashboard workspace.
+      // Pre-v4 missed the "News & Social" seed dashboard and the showcase
+      // desk layout — reseed so returning visitors see the full demo.
       migrate: (persisted, version) => {
         const fresh = {
           dashboards: SEED_DASHBOARDS,
           folders: SEED_FOLDERS,
           activeId: SEED_DASHBOARDS[0].id,
         };
-        if (version < 3 || !persisted) return fresh;
+        if (version < 4 || !persisted) return fresh;
         return persisted as typeof fresh;
       },
     },
