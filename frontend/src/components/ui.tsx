@@ -1,6 +1,5 @@
 /**
- * Shared presentational primitives — kept deliberately small and consistent
- * with the tokens / component classes in `theme.css` + `tailwind.config.js`.
+ * Shared presentational primitives — Abyssal Terminal design system.
  */
 
 import {
@@ -17,58 +16,80 @@ type Tone = "neutral" | "gain" | "loss" | "accent" | "warn";
 
 const TONE_CHIP: Record<Tone, string> = {
   neutral: "bg-bg-2 text-fg-muted border border-border",
-  gain: "bg-gain/15 text-gain border border-gain/30",
-  loss: "bg-loss/15 text-loss border border-loss/30",
-  accent: "bg-accent/15 text-accent border border-accent/30",
-  warn: "bg-warn/15 text-warn border border-warn/30",
+  gain:    "bg-gain/10 text-gain border border-gain/25",
+  loss:    "bg-loss/10 text-loss border border-loss/25",
+  accent:  "bg-accent/10 text-accent border border-accent/25",
+  warn:    "bg-warn/10 text-warn border border-warn/25",
 };
 
 const TONE_DOT: Record<Tone, string> = {
   neutral: "bg-fg-faint",
-  gain: "bg-gain",
-  loss: "bg-loss",
-  accent: "bg-accent",
-  warn: "bg-warn",
+  gain:    "bg-gain",
+  loss:    "bg-loss",
+  accent:  "bg-accent",
+  warn:    "bg-warn",
 };
 
-/** Small status/label chip. Optional leading color dot. */
+const TONE_GLOW: Record<Tone, string> = {
+  neutral: "",
+  gain:    "shadow-glow-gain",
+  loss:    "shadow-glow-loss",
+  accent:  "shadow-glow-sm",
+  warn:    "",
+};
+
+/** Status/label chip with optional glow. */
 export function Pill({
   tone = "neutral",
   dot = false,
   pulse = false,
+  glow = false,
   className,
   children,
 }: {
   tone?: Tone;
   dot?: boolean;
   pulse?: boolean;
+  /** Emit a subtle color glow matching the tone. */
+  glow?: boolean;
   className?: string;
   children: ReactNode;
 }) {
   return (
-    <span className={cn("chip whitespace-nowrap", TONE_CHIP[tone], className)}>
+    <span
+      className={cn(
+        "chip whitespace-nowrap transition-shadow duration-300",
+        TONE_CHIP[tone],
+        glow && TONE_GLOW[tone],
+        className,
+      )}
+    >
       {dot && (
-        <span
-          className={cn(
-            "h-1.5 w-1.5 rounded-full",
-            TONE_DOT[tone],
-            pulse && "animate-pulse",
+        <span className="relative flex h-1.5 w-1.5 flex-shrink-0">
+          {pulse && (
+            <span
+              className={cn(
+                "absolute inline-flex h-full w-full rounded-full opacity-75",
+                TONE_DOT[tone],
+                "animate-[radar-ping_1.4s_cubic-bezier(0,0,0.2,1)_infinite]",
+              )}
+            />
           )}
-        />
+          <span className={cn("relative inline-flex h-1.5 w-1.5 rounded-full", TONE_DOT[tone])} />
+        </span>
       )}
       {children}
     </span>
   );
 }
 
-/** A numeric delta with directional arrow + P&L coloring. */
+/** Numeric delta with directional arrow + P&L coloring. */
 export function StatDelta({
   value,
   format,
   className,
 }: {
   value: number | null | undefined;
-  /** Render the magnitude however the caller wants (money/pct/num). */
   format: (n: number | null | undefined) => string;
   className?: string;
 }) {
@@ -96,10 +117,10 @@ export function IconButton({
     <button
       type="button"
       className={cn(
-        "inline-flex h-7 w-7 items-center justify-center rounded border border-border",
-        "bg-bg-2 text-fg-muted transition-colors hover:bg-bg-3 hover:text-fg",
-        "disabled:cursor-not-allowed disabled:opacity-50",
-        active && "border-accent/40 bg-accent/15 text-accent",
+        "inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border",
+        "bg-bg-2 text-fg-muted transition-all duration-150 hover:bg-bg-3 hover:text-fg hover:border-border-strong",
+        "disabled:cursor-not-allowed disabled:opacity-40",
+        active && "border-accent/40 bg-accent/10 text-accent shadow-glow-sm",
         className,
       )}
       {...props}
@@ -109,12 +130,12 @@ export function IconButton({
 
 /** Spinning loader glyph. */
 export function Spinner({ className }: { className?: string }) {
-  return <Loader2 className={cn("h-4 w-4 animate-spin", className)} />;
+  return <Loader2 className={cn("h-4 w-4 animate-spin text-accent", className)} />;
 }
 
 /**
- * Backdrop modal. Renders into a portal, dismisses on Esc + backdrop click,
- * locks body scroll while open.
+ * Backdrop modal with glass-morphism surface.
+ * Renders into a portal, dismisses on Esc + backdrop click.
  */
 export function Modal({
   open,
@@ -131,9 +152,7 @@ export function Modal({
 }) {
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
@@ -142,16 +161,20 @@ export function Modal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-8 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-bg-0/70 p-8 backdrop-blur-md"
       onMouseDown={onClose}
     >
       <div
-        className="flex max-h-full w-full flex-col overflow-hidden rounded-lg border border-border-strong bg-bg-1 shadow-2xl"
-        style={{ maxWidth: width }}
+        className="flex max-h-full w-full flex-col overflow-hidden rounded-xl border border-border-strong shadow-panel"
+        style={{
+          maxWidth: width,
+          background: "linear-gradient(135deg, rgba(11,26,42,0.97) 0%, rgba(6,18,31,0.97) 100%)",
+          boxShadow: "0 24px 64px rgba(2,12,24,0.8), 0 0 0 1px rgba(6,209,243,0.08)",
+        }}
         onMouseDown={(e) => e.stopPropagation()}
       >
         {title != null && (
-          <div className="flex items-center justify-between border-b border-border px-3 py-2">
+          <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
             <div className="text-sm font-semibold text-fg">{title}</div>
             <IconButton onClick={onClose} aria-label="Close">
               <X className="h-4 w-4" />

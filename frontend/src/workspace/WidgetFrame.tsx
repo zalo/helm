@@ -1,12 +1,6 @@
 /**
- * WidgetFrame — the chrome every widget renders inside.
- *
- * Layout: a compact header (icon + title + right-aligned actions slot) over a
- * flex-fill body that owns its own scroll. A class-component error boundary
- * isolates each widget so one throwing component can't take down the desk.
- *
- * Also exports `WidgetLoading` / `WidgetEmpty` / `WidgetError` — consistent
- * states the shell uses and widget agents can reuse.
+ * WidgetFrame — chrome every widget renders inside.
+ * Glass header with gradient edge highlight. Error boundary isolates crashes.
  */
 
 import { Component, type ErrorInfo, type ReactNode } from "react";
@@ -15,7 +9,7 @@ import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Spinner } from "@/components/ui";
 
-// --- centered-state helpers ------------------------------------------------
+// --- centered-state helpers --------------------------------------------------
 
 function CenteredState({
   icon: Icon,
@@ -33,17 +27,9 @@ function CenteredState({
   return (
     <div className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center">
       <Icon
-        className={cn(
-          "h-6 w-6",
-          tone === "loss" ? "text-loss" : "text-fg-faint",
-        )}
+        className={cn("h-6 w-6", tone === "loss" ? "text-loss" : "text-fg-faint")}
       />
-      <div
-        className={cn(
-          "text-sm font-medium",
-          tone === "loss" ? "text-loss" : "text-fg-muted",
-        )}
-      >
+      <div className={cn("text-sm font-medium", tone === "loss" ? "text-loss" : "text-fg-muted")}>
         {title}
       </div>
       {detail != null && (
@@ -58,7 +44,7 @@ export function WidgetLoading({ label = "Loading…" }: { label?: string }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-2 text-fg-faint">
       <Spinner />
-      <div className="text-xs">{label}</div>
+      <div className="text-xs text-fg-faint">{label}</div>
     </div>
   );
 }
@@ -100,14 +86,10 @@ export function WidgetError({
   );
 }
 
-// --- error boundary --------------------------------------------------------
+// --- error boundary ----------------------------------------------------------
 
-interface BoundaryProps {
-  children: ReactNode;
-}
-interface BoundaryState {
-  error: Error | null;
-}
+interface BoundaryProps  { children: ReactNode }
+interface BoundaryState  { error: Error | null }
 
 class WidgetErrorBoundary extends Component<BoundaryProps, BoundaryState> {
   state: BoundaryState = { error: null };
@@ -117,7 +99,6 @@ class WidgetErrorBoundary extends Component<BoundaryProps, BoundaryState> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    // Surface the failure without crashing the workspace.
     console.error("[WidgetFrame] widget crashed:", error, info.componentStack);
   }
 
@@ -137,7 +118,7 @@ class WidgetErrorBoundary extends Component<BoundaryProps, BoundaryState> {
   }
 }
 
-// --- frame -----------------------------------------------------------------
+// --- frame -------------------------------------------------------------------
 
 export function WidgetFrame({
   icon: Icon,
@@ -147,15 +128,22 @@ export function WidgetFrame({
 }: {
   icon?: LucideIcon;
   title: ReactNode;
-  /** Right-aligned slot in the header — settings buttons, toggles, etc. */
   actions?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <div className="flex h-full flex-col bg-bg-1">
-      <header className="flex h-7 flex-shrink-0 items-center gap-1.5 border-b border-border bg-bg-2 px-2">
-        {Icon && <Icon className="h-3.5 w-3.5 text-fg-muted" />}
-        <span className="truncate text-xs font-semibold text-fg">{title}</span>
+    <div className="flex h-full flex-col" style={{ background: "var(--bg-1)" }}>
+      {/* Glass panel header with subtle top-highlight edge */}
+      <header
+        className="flex h-7 flex-shrink-0 items-center gap-1.5 px-2.5"
+        style={{
+          background: "linear-gradient(180deg, rgba(17,33,51,0.95) 0%, rgba(11,26,42,0.90) 100%)",
+          borderBottom: "1px solid rgba(21,42,66,0.9)",
+          boxShadow: "inset 0 1px 0 rgba(6,209,243,0.06)",
+        }}
+      >
+        {Icon && <Icon className="h-3.5 w-3.5 flex-shrink-0 text-accent/60" />}
+        <span className="truncate text-xs font-semibold tracking-wide text-fg/90">{title}</span>
         {actions != null && (
           <div className="ml-auto flex items-center gap-1">{actions}</div>
         )}

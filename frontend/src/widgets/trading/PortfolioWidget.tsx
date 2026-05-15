@@ -8,22 +8,29 @@ import { money, signedMoney, pct, num, pnlColor, arrow } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { Loading, ErrorState, Empty } from "./_shared";
 
-function Stat({
+function StatCard({
   label,
   value,
   className,
-  hint,
+  accent = false,
 }: {
   label: string;
   value: string;
   className?: string;
-  hint?: string;
+  accent?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-0.5 rounded border border-border bg-bg-1 px-2 py-1.5">
-      <span className="text-2xs uppercase tracking-wide text-fg-faint">{label}</span>
-      <span className={cn("num text-sm", className)}>{value}</span>
-      {hint && <span className="text-2xs text-fg-faint">{hint}</span>}
+    <div
+      className={cn(
+        "flex flex-col gap-0.5 rounded-lg px-2.5 py-2 transition-all duration-200",
+        "border",
+        accent
+          ? "border-border-strong bg-bg-2/80"
+          : "border-border bg-bg-2/40 hover:bg-bg-2/70 hover:border-border-strong",
+      )}
+    >
+      <span className="text-2xs font-medium uppercase tracking-wider text-fg-faint">{label}</span>
+      <span className={cn("num text-sm font-semibold", className)}>{value}</span>
     </div>
   );
 }
@@ -43,56 +50,96 @@ export default function PortfolioWidget(_props: WidgetProps) {
   }, [qc]);
 
   if (isLoading) return <Loading />;
-  if (isError) return <ErrorState label="Portfolio unavailable" />;
-  if (!data) return <Empty />;
+  if (isError)   return <ErrorState label="Portfolio unavailable" />;
+  if (!data)     return <Empty />;
 
   const p = data;
+  const pnlPositive = p.total_pnl >= 0;
+
   return (
-    <div className="scroll-y panel-pad flex flex-col gap-2.5">
-      {/* Headline */}
-      <div className="flex flex-col gap-0.5">
-        <span className="text-2xs uppercase tracking-wide text-fg-faint">Equity</span>
-        <div className="flex items-baseline gap-2">
-          <span className="num text-2xl font-semibold tabular-nums">{money(p.equity)}</span>
-          <span className={cn("num text-sm", pnlColor(p.total_pnl))}>
-            {arrow(p.total_pnl)} {signedMoney(p.total_pnl)} ({pct(p.total_pnl_pct)})
+    <div className="scroll-y panel-pad flex flex-col gap-3">
+      {/* Headline equity — gradient text, bold presence */}
+      <div
+        className="rounded-xl border border-border-strong p-4"
+        style={{
+          background: "linear-gradient(135deg, rgba(11,26,42,0.9) 0%, rgba(6,18,31,0.8) 100%)",
+          boxShadow: pnlPositive
+            ? "inset 0 1px 0 rgba(32,212,124,0.08), 0 0 24px rgba(32,212,124,0.04)"
+            : "inset 0 1px 0 rgba(240,73,90,0.08), 0 0 24px rgba(240,73,90,0.04)",
+        }}
+      >
+        <span className="text-2xs font-medium uppercase tracking-wider text-fg-faint">
+          Total Equity
+        </span>
+        <div className="mt-1 flex items-baseline gap-2.5">
+          <span
+            className="num text-3xl font-bold tabular-nums"
+            style={{
+              background: pnlPositive
+                ? "linear-gradient(135deg, #dde9f8 30%, #20d47c 100%)"
+                : "linear-gradient(135deg, #dde9f8 30%, #f0495a 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
+          >
+            {money(p.equity)}
+          </span>
+          <span className={cn("num text-base font-semibold", pnlColor(p.total_pnl))}>
+            {arrow(p.total_pnl)}&nbsp;{signedMoney(p.total_pnl)}
           </span>
         </div>
-        <span className="text-2xs text-fg-faint">
-          from {money(p.starting_equity)} starting · {p.currency}
-        </span>
+        <div className="mt-1.5 flex items-center gap-2">
+          <span
+            className={cn(
+              "chip border font-semibold",
+              pnlPositive
+                ? "bg-gain/10 text-gain border-gain/25"
+                : "bg-loss/10 text-loss border-loss/25",
+            )}
+          >
+            {pct(p.total_pnl_pct)}
+          </span>
+          <span className="text-2xs text-fg-faint">
+            from {money(p.starting_equity)} · {p.currency}
+          </span>
+        </div>
       </div>
 
       {/* Stat grid */}
       <div className="grid grid-cols-2 gap-1.5">
-        <Stat
+        <StatCard
           label="Unrealized P&L"
           value={signedMoney(p.unrealized_pnl)}
           className={pnlColor(p.unrealized_pnl)}
         />
-        <Stat
+        <StatCard
           label="Realized P&L"
           value={signedMoney(p.realized_pnl)}
           className={pnlColor(p.realized_pnl)}
         />
-        <Stat label="Net Exposure" value={money(p.net_exposure)} />
-        <Stat label="Open Positions" value={num(p.positions_count, 0)} />
-        <Stat
+        <StatCard label="Net Exposure"    value={money(p.net_exposure)} />
+        <StatCard label="Open Positions"  value={num(p.positions_count, 0)} />
+        <StatCard
           label="Win Rate"
           value={pct(p.win_rate * 100, 1)}
           className={p.win_rate >= 0.5 ? "text-gain" : "text-loss"}
         />
-        <Stat
+        <StatCard
           label="Sharpe"
           value={num(p.sharpe, 2)}
           className={p.sharpe >= 1 ? "text-gain" : p.sharpe < 0 ? "text-loss" : "text-fg"}
         />
-        <Stat
+        <StatCard
           label="Max Drawdown"
           value={pct(-Math.abs(p.max_drawdown_pct), 1)}
           className="text-loss"
         />
-        <Stat label="As of" value={new Date(p.ts).toLocaleTimeString("en-US", { hour12: false })} />
+        <StatCard
+          label="As of"
+          value={new Date(p.ts).toLocaleTimeString("en-US", { hour12: false })}
+          className="text-fg-muted"
+        />
       </div>
     </div>
   );

@@ -1,10 +1,8 @@
 /**
- * WidgetCatalog — the "Add Widget" modal. Lists every registered widget
- * grouped by category, searchable by name/description. Clicking an entry adds
- * it to the live workspace and closes. Esc-dismissable via `<Modal>`.
+ * WidgetCatalog — "Add Widget" modal. Searchable, grouped by category.
  */
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { widgetsByCategory } from "@/widgets/registry";
 import type { WidgetDefinition } from "@/widgets/types";
@@ -19,7 +17,6 @@ export function WidgetCatalog({
   onClose: () => void;
 }) {
   const [query, setQuery] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
   const addWidget = useWorkspaceController((s) => s.addWidget);
 
   const groups = useMemo(() => {
@@ -40,45 +37,41 @@ export function WidgetCatalog({
     return out;
   }, [query]);
 
-  const pick = (type: string) => {
-    addWidget(type);
-    onClose();
-  };
-
+  const pick = (type: string) => { addWidget(type); onClose(); };
   const total = groups.reduce((n, [, w]) => n + w.length, 0);
 
   return (
     <Modal open={open} onClose={onClose} title="Add Widget" width={620}>
       <div className="flex flex-col">
-        <div className="sticky top-0 z-10 border-b border-border bg-bg-1 p-2.5">
-          <div className="flex items-center gap-2 rounded border border-border bg-bg-0 px-2">
-            <Search className="h-3.5 w-3.5 text-fg-faint" />
+        {/* Search bar */}
+        <div className="sticky top-0 z-10 border-b border-border bg-bg-1/80 p-3 backdrop-blur-md">
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-bg-0/80 px-3">
+            <Search className="h-3.5 w-3.5 flex-shrink-0 text-accent/60" />
             <input
-              ref={inputRef}
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search widgets…"
-              className="h-8 flex-1 bg-transparent text-sm text-fg outline-none placeholder:text-fg-faint"
+              className="h-9 flex-1 bg-transparent text-sm text-fg outline-none placeholder:text-fg-faint"
             />
           </div>
         </div>
 
-        <div className="p-2.5">
+        <div className="p-3">
           {total === 0 ? (
             <div className="py-10 text-center text-sm text-fg-faint">
-              {widgetsByCategory && Object.keys(widgetsByCategory()).length === 0
+              {Object.keys(widgetsByCategory()).length === 0
                 ? "No widgets registered yet."
-                : `No widgets match “${query}”.`}
+                : `No widgets match "${query}".`}
             </div>
           ) : (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-5">
               {groups.map(([category, widgets]) => (
                 <section key={category}>
-                  <h3 className="mb-1.5 text-2xs font-semibold uppercase tracking-wide text-fg-faint">
+                  <h3 className="mb-2 text-2xs font-bold uppercase tracking-widest text-accent/60">
                     {category}
                   </h3>
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-2 gap-2">
                     {widgets.map((w) => {
                       const Icon = w.icon;
                       return (
@@ -86,16 +79,21 @@ export function WidgetCatalog({
                           key={w.type}
                           type="button"
                           onClick={() => pick(w.type)}
-                          className="group flex items-start gap-2 rounded border border-border bg-bg-2 p-2 text-left transition-colors hover:border-accent/40 hover:bg-bg-3"
+                          className="group flex items-start gap-3 rounded-xl border border-border bg-bg-2/50 p-3 text-left
+                            transition-all duration-150 hover:border-accent/30 hover:bg-bg-2 hover:shadow-glow-sm"
                         >
-                          <span className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded bg-bg-0 text-fg-muted group-hover:text-accent">
+                          <span
+                            className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg
+                              border border-border bg-bg-0 text-fg-faint transition-colors
+                              group-hover:border-accent/30 group-hover:text-accent"
+                          >
                             <Icon className="h-3.5 w-3.5" />
                           </span>
                           <span className="min-w-0">
                             <span className="block truncate text-xs font-semibold text-fg">
                               {w.title}
                             </span>
-                            <span className="block text-2xs leading-snug text-fg-faint line-clamp-2">
+                            <span className="mt-0.5 block text-2xs leading-snug text-fg-faint line-clamp-2">
                               {w.description}
                             </span>
                           </span>
