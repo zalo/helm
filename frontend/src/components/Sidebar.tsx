@@ -8,7 +8,7 @@
 
 import { useState } from "react";
 import {
-  LayoutDashboard, Wallet, Globe, Bitcoin, Plus, FolderPlus,
+  LayoutDashboard, Wallet, Globe, Bitcoin, Newspaper, Plus, FolderPlus,
   LayoutGrid, Sparkles, ChevronLeft, ChevronRight, ChevronDown,
   MoreHorizontal, Folder as FolderIcon, Github, Pencil, Copy, Trash2,
 } from "lucide-react";
@@ -19,7 +19,7 @@ import { cn } from "@/lib/cn";
 // --- dashboard icon resolution ----------------------------------------------
 
 const ICONS: Record<string, LucideIcon> = {
-  LayoutDashboard, Wallet, Globe, Bitcoin,
+  LayoutDashboard, Wallet, Globe, Bitcoin, Newspaper,
 };
 const iconFor = (name: string): LucideIcon => ICONS[name] ?? LayoutDashboard;
 
@@ -151,7 +151,7 @@ export function Sidebar({
           collapsed ? "justify-center px-0" : "gap-2 px-3",
         )}
       >
-        <img src="/helm.svg" alt="Helm" className="h-5 w-5 flex-shrink-0" />
+        <img src={`${import.meta.env.BASE_URL}helm.png`} alt="Helm" className="h-6 w-6 flex-shrink-0" />
         {!collapsed && (
           <span className="text-sm font-bold tracking-tight text-fg">Helm</span>
         )}

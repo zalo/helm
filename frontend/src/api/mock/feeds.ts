@@ -1,32 +1,27 @@
 /**
- * Static feed data for the demo build. Serves the frozen JSON snapshots that
- * were captured from the live backend's `/feeds/*` endpoints.
+ * Static feed data for the demo build. Serves frozen JSON snapshots captured
+ * from the live backend, plus generators (`feedgen.ts`) that fill the gaps the
+ * snapshots can't: per-subreddit Reddit, per-filing-type SEC, simulated
+ * Discord chat, and a faux Twitter oEmbed card.
  */
 
 import type { FeedItem, FeedSource, OEmbedResponse } from "../types";
 import sourcesJson from "./snapshots/sources.json";
 import whitehouse from "./snapshots/whitehouse.json";
-import reddit from "./snapshots/reddit.json";
 import twitter from "./snapshots/twitter.json";
-import discord from "./snapshots/discord.json";
-import secEdgar from "./snapshots/sec-edgar.json";
 import congressTrades from "./snapshots/congress-trades.json";
 import econCalendar from "./snapshots/econ-calendar.json";
 import fearGreed from "./snapshots/fear-greed.json";
 import hackerNews from "./snapshots/hacker-news.json";
+import { redditThreads, secFilings, discordMessages, fauxTweetEmbed } from "./feedgen";
 
 const SNAPSHOTS: Record<string, FeedItem[]> = {
-  whitehouse: whitehouse as FeedItem[],
-  reddit: reddit as FeedItem[],
-  twitter: twitter as FeedItem[],
-  // discord's snapshot is the backend's single-item "unavailable" placeholder
-  // (no guild_id configured) — normalise it to the FeedItem[] contract.
-  discord: [discord as unknown as FeedItem],
-  "sec-edgar": secEdgar as FeedItem[],
+  whitehouse:        whitehouse as FeedItem[],
+  twitter:           twitter as FeedItem[],
   "congress-trades": congressTrades as FeedItem[],
-  "econ-calendar": econCalendar as FeedItem[],
-  "fear-greed": fearGreed as FeedItem[],
-  "hacker-news": hackerNews as FeedItem[],
+  "econ-calendar":   econCalendar as FeedItem[],
+  "fear-greed":      fearGreed as FeedItem[],
+  "hacker-news":     hackerNews as FeedItem[],
 };
 
 /** Small synthetic delay so loading states are visible in the demo. */
@@ -40,24 +35,44 @@ export function getFeedSources(): Promise<FeedSource[]> {
 
 export function getFeed(
   sourceId: string,
-  params: { limit?: number; query?: string } = {},
+  params: { limit?: number; query?: string; subreddit?: string; type?: string } = {},
 ): Promise<FeedItem[]> {
-  let items = SNAPSHOTS[sourceId] ?? [];
+  let items: FeedItem[];
 
-  // hacker-news is the one source where a light query filter is cheap & useful.
-  if (sourceId === "hacker-news" && params.query) {
-    const terms = params.query
-      .split(/\s+OR\s+/i)
-      .map((t) => t.trim().toLowerCase())
-      .filter(Boolean);
-    if (terms.length) {
-      const filtered = items.filter((it) => {
-        const hay = `${it.title} ${it.summary}`.toLowerCase();
-        return terms.some((t) => hay.includes(t));
-      });
-      // Fall back to the full snapshot if the filter wiped everything out.
-      if (filtered.length) items = filtered;
+  switch (sourceId) {
+    case "reddit":
+      items = redditThreads(params.subreddit ?? "wallstreetbets");
+      break;
+
+    case "sec-edgar":
+      items = secFilings(params.type ?? "8-K");
+      break;
+
+    case "discord":
+      items = discordMessages();
+      break;
+
+    case "hacker-news": {
+      // Light query filter — split on " OR " and match either term.
+      items = SNAPSHOTS["hacker-news"];
+      if (params.query) {
+        const terms = params.query
+          .split(/\s+OR\s+/i)
+          .map((t) => t.trim().toLowerCase())
+          .filter(Boolean);
+        if (terms.length) {
+          const filtered = items.filter((it) => {
+            const hay = `${it.title} ${it.summary}`.toLowerCase();
+            return terms.some((t) => hay.includes(t));
+          });
+          if (filtered.length) items = filtered;
+        }
+      }
+      break;
     }
+
+    default:
+      items = SNAPSHOTS[sourceId] ?? [];
   }
 
   if (params.limit !== undefined) items = items.slice(0, params.limit);
@@ -65,10 +80,5 @@ export function getFeed(
 }
 
 export function getOembed(url: string): Promise<OEmbedResponse> {
-  const html =
-    `<blockquote class="helm-demo-embed">` +
-    `<p>Live embeds are disabled in the static demo.</p>` +
-    `<p><a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a></p>` +
-    `</blockquote>`;
-  return delay({ html, provider: "helm-demo", title: "Embed unavailable (static demo)" });
+  return delay(fauxTweetEmbed(url));
 }

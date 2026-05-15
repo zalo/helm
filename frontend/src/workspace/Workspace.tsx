@@ -103,6 +103,7 @@ function buildDefaultLayout(api: DockviewApi, kind: string): void {
       const reddit = place("reddit", below(twitter));
       const sec = place("sec-edgar", below(hn));
       place("white-house", within(sec));
+      place("discord", right(sec));
       void reddit;
       break;
     }
@@ -114,13 +115,19 @@ function buildDefaultLayout(api: DockviewApi, kind: string): void {
       break;
     }
     default: {
-      // "desk" — the full command center.
-      const chart = place("chart");
-      const portfolio = place("portfolio", right(chart));
-      place("ai-decision-feed", below(portfolio));
-      const positions = place("positions", below(chart));
-      place("orders", right(positions));
-      place("pnl", within(positions));
+      // "desk" — the full command-center showcase.
+      //   Top:    chart (large) │ portfolio + pnl (stacked) │ ai-decision-feed
+      //   Bottom: positions+orders (tabbed) │ exotics (4-tab group)
+      const chart      = place("chart");
+      const portfolio  = place("portfolio",        right(chart));
+      place("pnl",                                 below(portfolio));
+      place("ai-decision-feed",                    right(portfolio));
+      const positions  = place("positions",        below(chart));
+      place("orders",                              within(positions));
+      const exotics    = place("twitter-feed",     right(positions));
+      place("reddit",                              within(exotics));
+      place("fear-greed",                          within(exotics));
+      place("econ-calendar",                       within(exotics));
       break;
     }
   }

@@ -5,7 +5,10 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pause, Play, Search, LayoutGrid, Sparkles, ChevronRight } from "lucide-react";
+import {
+  Pause, Play, Search, LayoutGrid, Sparkles, ChevronRight,
+  TrendingUp, TrendingDown, Minus,
+} from "lucide-react";
 import { api } from "@/api/client";
 import type { AITraderStatus, PortfolioSnapshot } from "@/api/types";
 import { money, pct, signedMoney } from "@/lib/format";
@@ -104,6 +107,50 @@ function PortfolioSummary() {
   );
 }
 
+// --- regime indicator --------------------------------------------------------
+// Single-chip macro read derived from the live portfolio + AI signal flow.
+// Maps total day-P&L to a coarse risk regime — the research surveyed several
+// pro dashboards (Hyperliquid, Trade Ideas) where a single regime chip is the
+// "what is the market doing right now" anchor. Demo-grade heuristic.
+
+function RegimePill() {
+  const { data } = useQuery({
+    queryKey: ["trading", "portfolio"],
+    queryFn: api.portfolio,
+    refetchInterval: 10_000,
+  });
+
+  if (!data) {
+    return (
+      <Pill tone="neutral" dot>
+        <Minus className="h-3 w-3" />
+        <span className="hidden xl:inline">Regime</span>
+      </Pill>
+    );
+  }
+  const p = data.total_pnl_pct;
+  let tone: "gain" | "loss" | "warn" | "neutral";
+  let label: string;
+  let Icon: typeof TrendingUp;
+  if (p >= 0.5) {
+    tone = "gain";   label = "Risk-On";   Icon = TrendingUp;
+  } else if (p <= -0.5) {
+    tone = "loss";   label = "Risk-Off";  Icon = TrendingDown;
+  } else if (p >= 0) {
+    tone = "warn";   label = "Coiled";    Icon = Minus;
+  } else {
+    tone = "warn";   label = "Defensive"; Icon = TrendingDown;
+  }
+  return (
+    <span title={`Day P&L ${pct(p)}`}>
+      <Pill tone={tone} dot>
+        <Icon className="h-3 w-3" />
+        <span>{label}</span>
+      </Pill>
+    </span>
+  );
+}
+
 // --- connection --------------------------------------------------------------
 
 const WS_TONE  = { connecting: "warn", open: "gain", closed: "loss" } as const;
@@ -142,7 +189,7 @@ export function Topbar({
       {/* Mobile: compact wordmark. Desktop: dashboard breadcrumb. */}
       {isMobile ? (
         <div className="flex items-center gap-2">
-          <img src="/helm.svg" alt="Helm" className="h-5 w-5" />
+          <img src={`${import.meta.env.BASE_URL}helm.png`} alt="Helm" className="h-6 w-6" />
           <span className="text-sm font-bold tracking-tight text-fg">Helm</span>
         </div>
       ) : (
@@ -172,6 +219,8 @@ export function Topbar({
       )}
 
       <div className="ml-auto flex items-center gap-3">
+        <RegimePill />
+        <div className="hidden h-6 w-px bg-border md:block" />
         <AiStatus />
         <div className="hidden h-6 w-px bg-border md:block" />
         <PortfolioSummary />
