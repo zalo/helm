@@ -7,19 +7,60 @@ thin pass-through to the OpenBB Platform API.
 
 from __future__ import annotations
 
+import json
+import logging
+import threading
+from collections import deque
+from pathlib import Path
 from typing import Any
 
 from datetime import datetime, timezone
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from helm.config import get_settings
 from helm.engine.manager import get_broadcaster, get_engine
 from helm.models import Order
 
+log = logging.getLogger("helm.api.agent")
+
 router = APIRouter()
+
+
+# --- chat ring buffer (disk-backed) -----------------------------------------
+#
+# Both `wake` (user → agent) and `say` (agent → user) messages are appended so
+# the Chat panel can pull the full conversation on mount, regardless of whether
+# the tab was open when an earlier event fired. The buffer is bounded; oldest
+# entries fall off.
+_CHAT_MAX = 500
+_CHAT_PATH = Path(__file__).resolve().parents[2] / ".chat_history.json"
+_chat_lock = threading.Lock()
+
+
+def _load_chat() -> deque[dict[str, Any]]:
+    try:
+        if _CHAT_PATH.exists():
+            data = json.loads(_CHAT_PATH.read_text())
+            if isinstance(data, list):
+                return deque(data[-_CHAT_MAX:], maxlen=_CHAT_MAX)
+    except Exception:
+        log.warning("chat history file unreadable; starting fresh", exc_info=True)
+    return deque(maxlen=_CHAT_MAX)
+
+
+_chat: deque[dict[str, Any]] = _load_chat()
+
+
+def _append_chat(entry: dict[str, Any]) -> None:
+    with _chat_lock:
+        _chat.append(entry)
+        try:
+            _CHAT_PATH.write_text(json.dumps(list(_chat)))
+        except Exception:
+            log.debug("chat history flush failed", exc_info=True)
 
 
 class SubmitOrderRequest(BaseModel):
@@ -71,6 +112,9 @@ async def wake_agent(req: WakeRequest) -> dict[str, Any]:
         "data": req.data,
         "ts": datetime.now(timezone.utc).isoformat(),
     }
+    if req.message:
+        _append_chat({"role": "user", "message": req.message,
+                      "source": req.source, "ts": payload["ts"]})
     await get_broadcaster().publish("wake", payload)
     return {"woken": True, "payload": payload}
 
@@ -90,8 +134,19 @@ async def agent_say(req: AgentSayRequest) -> dict[str, Any]:
         "data": req.data,
         "ts": datetime.now(timezone.utc).isoformat(),
     }
+    _append_chat({"role": req.role, "message": req.message, "ts": payload["ts"]})
     await get_broadcaster().publish("agent_message", payload)
     return {"posted": True, "payload": payload}
+
+
+@router.get("/chat")
+async def get_chat_history(
+    limit: int = Query(500, ge=1, le=_CHAT_MAX),
+) -> dict[str, Any]:
+    """Full chat history — agent says + user wakes, oldest first."""
+    with _chat_lock:
+        items = list(_chat)[-limit:]
+    return {"count": len(items), "messages": items}
 
 
 class OpenBBProxy(BaseModel):

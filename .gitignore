@@ -29,3 +29,7 @@ Thumbs.db
 # Helm runtime
 backend/data/
 *.log
+
+# Agent CLI chat ring buffer (disk-backed history for the Chat panel).
+.chat_history.json
+backend/.chat_history.json

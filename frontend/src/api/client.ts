@@ -6,6 +6,7 @@
 
 import type {
   Account,
+  AgentChatMessage,
   AIDecision,
   AITraderStatus,
   Bar,
@@ -77,6 +78,10 @@ const realApi = {
       method: "POST",
       body: JSON.stringify({ message, source: "webui", data }),
     }),
+  agentChat: (limit = 500) =>
+    request<{ count: number; messages: AgentChatMessage[] }>(
+      `/agent/chat${qs({ limit })}`,
+    ),
 
   // --- exotic feeds ---
   feedSources: () => request<FeedSource[]>("/feeds/sources"),

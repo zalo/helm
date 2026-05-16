@@ -59,6 +59,7 @@ export const mockApi = {
     woken: true,
     payload: { message, source: "webui", demo: true },
   }),
+  agentChat: async (_limit = 500) => ({ count: 0, messages: [] }),
 
   // --- exotic feeds ---
   feedSources: () => getFeedSources(),

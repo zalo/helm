@@ -201,6 +201,15 @@ export interface WsEvent<T = unknown> {
   payload: T;
 }
 
+// --- agent chat ---------------------------------------------------------------
+
+export interface AgentChatMessage {
+  role: "user" | "agent" | string;
+  message: string;
+  ts: string;
+  source?: string;
+}
+
 export interface LogEntry {
   ts: string;
   level: "debug" | "info" | "warning" | "error";

@@ -257,7 +257,37 @@ function ChatPanel() {
   const [messages, setMessages] = useState<ChatMsg[]>(loadChatHistory);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Persist on every change so a refresh / new tab visit keeps history.
+  // On mount, pull the canonical chat history from the backend (covers
+  // messages that arrived while the tab was closed or on a different tab).
+  // Merge with whatever was already in localStorage so we don't lose messages
+  // the server might have forgotten (e.g. after a backend restart).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await api.agentChat(500);
+        if (cancelled) return;
+        setMessages((prev) => {
+          const seen = new Set(prev.map((m) => m.id));
+          const fromServer: ChatMsg[] = data.messages.map((m) => ({
+            id: `s-${m.ts}-${m.role}-${m.message.length}`,
+            role: m.role === "agent" ? "agent" : "user",
+            message: m.message,
+            ts: m.ts,
+          }));
+          const additions = fromServer.filter((m) => !seen.has(m.id));
+          const merged = [...prev, ...additions].sort((a, b) =>
+            a.ts.localeCompare(b.ts),
+          );
+          return merged;
+        });
+      } catch { /* offline / endpoint missing — fall back to local-only */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Persist on every change so a refresh / new tab visit keeps history even
+  // if the backend's ring buffer was cleared.
   useEffect(() => {
     saveChatHistory(messages);
   }, [messages]);
