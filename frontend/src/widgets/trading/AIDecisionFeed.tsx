@@ -226,11 +226,41 @@ interface ChatMsg {
   ts: string;
 }
 
+const CHAT_STORAGE_KEY = "helm.chatHistory.v1";
+const CHAT_MAX_MESSAGES = 500;
+
+function loadChatHistory(): ChatMsg[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(CHAT_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.slice(-CHAT_MAX_MESSAGES) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveChatHistory(messages: ChatMsg[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    const trimmed = messages.slice(-CHAT_MAX_MESSAGES);
+    window.localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(trimmed));
+  } catch {
+    /* quota exceeded — drop silently; old messages are fine to lose */
+  }
+}
+
 function ChatPanel() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
-  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [messages, setMessages] = useState<ChatMsg[]>(loadChatHistory);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Persist on every change so a refresh / new tab visit keeps history.
+  useEffect(() => {
+    saveChatHistory(messages);
+  }, [messages]);
 
   useEffect(() => {
     const unsubAgent = helmSocket.on("agent_message", (e: WsEvent) => {
