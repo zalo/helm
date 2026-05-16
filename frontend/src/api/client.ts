@@ -71,6 +71,13 @@ const realApi = {
       body: JSON.stringify({ action }),
     }),
 
+  // --- agent (helm-agent CLI bridge) ---
+  agentWake: (message = "", data: Record<string, unknown> = {}) =>
+    request<{ woken: boolean; payload: Record<string, unknown> }>("/agent/wake", {
+      method: "POST",
+      body: JSON.stringify({ message, source: "webui", data }),
+    }),
+
   // --- exotic feeds ---
   feedSources: () => request<FeedSource[]>("/feeds/sources"),
   feed: (sourceId: string, params: { limit?: number; query?: string } = {}) =>

@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/agent-john/.local/bin/helm-agent status"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/agent-john/Desktop/helm/.claude/hooks/enforce_sleep_arm.py"
+          }
+        ]
+      }
+    ]
+  }
+}

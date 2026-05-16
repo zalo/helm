@@ -54,6 +54,12 @@ export const mockApi = {
   aiControl: (action: "pause" | "resume"): Promise<AITraderStatus> =>
     later(simulator.aiControl(action)),
 
+  // --- agent (no-op in demo: there's no live CLI to wake) ---
+  agentWake: async (message = "", _data: Record<string, unknown> = {}) => ({
+    woken: true,
+    payload: { message, source: "webui", demo: true },
+  }),
+
   // --- exotic feeds ---
   feedSources: () => getFeedSources(),
   feed: (sourceId: string, params: { limit?: number; query?: string } = {}) =>

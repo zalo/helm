@@ -5,9 +5,10 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import {
   Pause, Play, Search, LayoutGrid, Sparkles, ChevronRight,
-  TrendingUp, TrendingDown, Minus,
+  TrendingUp, TrendingDown, Minus, Bell,
 } from "lucide-react";
 import { api } from "@/api/client";
 import type { AITraderStatus, PortfolioSnapshot } from "@/api/types";
@@ -151,6 +152,32 @@ function RegimePill() {
   );
 }
 
+// --- wake agent --------------------------------------------------------------
+
+/** Send a one-shot "wake" event to any helm-agent CLI listening on /ws. */
+function WakeAgentButton() {
+  const [flash, setFlash] = useState(false);
+  const wake = useMutation({
+    mutationFn: (message: string) => api.agentWake(message),
+    onSuccess: () => {
+      setFlash(true);
+      setTimeout(() => setFlash(false), 1200);
+    },
+  });
+  return (
+    <button
+      type="button"
+      className={"btn h-7 px-2 text-xs " + (flash ? "btn-accent" : "")}
+      disabled={wake.isPending}
+      onClick={() => wake.mutate("wake from webui")}
+      title="Wake any helm-agent CLI sleeping on --on-event wake"
+    >
+      <Bell className="h-3.5 w-3.5" />
+      <span className="hidden sm:inline">{flash ? "Sent" : "Wake"}</span>
+    </button>
+  );
+}
+
 // --- connection --------------------------------------------------------------
 
 const WS_TONE  = { connecting: "warn", open: "gain", closed: "loss" } as const;
@@ -225,6 +252,7 @@ export function Topbar({
         <div className="hidden h-6 w-px bg-border md:block" />
         <PortfolioSummary />
         <div className="h-6 w-px bg-border" />
+        <WakeAgentButton />
         <ConnectionPill />
 
         {!isMobile && (

@@ -378,6 +378,13 @@ def cmd_close(args: argparse.Namespace) -> None:
                "note": "no open position to close (no-op)"})
 
 
+def cmd_say(args: argparse.Namespace) -> None:
+    """Post a message back to the webui chat panel."""
+    body = {"message": args.message, "role": args.role}
+    data = _request("POST", "/api/agent/say", json=body) or {}
+    _emit({"posted": bool(data.get("posted")), "ts": (data.get("payload") or {}).get("ts")})
+
+
 def cmd_pause(_: argparse.Namespace) -> None:
     data = _request("POST", "/api/ai/control", json={"action": "pause"}) or {}
     _emit({"ai_state": data.get("state"), "enabled": data.get("enabled")})
@@ -574,6 +581,10 @@ def _build_parser() -> argparse.ArgumentParser:
     sp.add_argument("order_id"); sp.set_defaults(fn=cmd_cancel)
     sp = sub.add_parser("close", help="flatten the open position on one instrument")
     sp.add_argument("instrument"); sp.set_defaults(fn=cmd_close)
+    sp = sub.add_parser("say", help="post a message back to the webui chat panel")
+    sp.add_argument("message")
+    sp.add_argument("--role", default="agent")
+    sp.set_defaults(fn=cmd_say)
     sub.add_parser("pause", help="pause the in-engine AI trader").set_defaults(fn=cmd_pause)
     sub.add_parser("resume", help="resume the in-engine AI trader").set_defaults(fn=cmd_resume)
 

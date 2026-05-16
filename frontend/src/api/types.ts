@@ -191,7 +191,9 @@ export type WsEventType =
   | "portfolio"
   | "ai_decision"
   | "ai_status"
-  | "log";
+  | "log"
+  | "wake"
+  | "agent_message";
 
 export interface WsEvent<T = unknown> {
   type: WsEventType;

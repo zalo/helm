@@ -272,6 +272,8 @@ WsEventType = Literal[
     "ai_decision",
     "ai_status",
     "log",
+    "wake",
+    "agent_message",
 ]
 
 

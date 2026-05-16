@@ -9,12 +9,14 @@ from __future__ import annotations
 
 from typing import Any
 
+from datetime import datetime, timezone
+
 import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from helm.config import get_settings
-from helm.engine.manager import get_engine
+from helm.engine.manager import get_broadcaster, get_engine
 from helm.models import Order
 
 router = APIRouter()
@@ -52,6 +54,44 @@ async def close_position(instrument: str) -> dict[str, Any]:
         "closed": order is not None,
         "order": order.model_dump(mode="json") if order else None,
     }
+
+
+class WakeRequest(BaseModel):
+    """Webui-driven wake-up signal for a waiting `helm-agent sleep --on-event wake`."""
+    message: str = Field("", description="Free-form message for the waiting agent")
+    source: str = Field("webui", description="Originating UI surface for the wake")
+    data: dict[str, Any] = Field(default_factory=dict)
+
+
+@router.post("/wake")
+async def wake_agent(req: WakeRequest) -> dict[str, Any]:
+    payload = {
+        "message": req.message,
+        "source": req.source,
+        "data": req.data,
+        "ts": datetime.now(timezone.utc).isoformat(),
+    }
+    await get_broadcaster().publish("wake", payload)
+    return {"woken": True, "payload": payload}
+
+
+class AgentSayRequest(BaseModel):
+    """Outbound message from the agent (operated by Claude Code) → webui chat."""
+    message: str = Field(..., description="Message body shown in the chat panel")
+    role: str = Field("agent", description="Sender label; defaults to 'agent'")
+    data: dict[str, Any] = Field(default_factory=dict)
+
+
+@router.post("/say")
+async def agent_say(req: AgentSayRequest) -> dict[str, Any]:
+    payload = {
+        "message": req.message,
+        "role": req.role,
+        "data": req.data,
+        "ts": datetime.now(timezone.utc).isoformat(),
+    }
+    await get_broadcaster().publish("agent_message", payload)
+    return {"posted": True, "payload": payload}
 
 
 class OpenBBProxy(BaseModel):

@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BrainCircuit, ChevronDown, ChevronRight, Pause, Play, Circle } from "lucide-react";
+import {
+  BrainCircuit, ChevronDown, ChevronRight, Pause, Play, Circle,
+  MessageSquare, Send, User2,
+} from "lucide-react";
 import { api } from "@/api/client";
 import { helmSocket } from "@/api/ws";
 import type {
@@ -209,10 +212,136 @@ function StatusHeader({ status }: { status: AITraderStatus | undefined }) {
   );
 }
 
+// --- chat panel --------------------------------------------------------------
+//
+// Round-trip: user types → POST /api/agent/wake (broadcasts `wake` WS event) →
+// helm-agent CLI sleeping on --on-event wake exits with the message → Claude
+// Code processes it → calls `helm-agent say "…"` → /api/agent/say broadcasts
+// `agent_message` → this panel renders it.
+
+interface ChatMsg {
+  id: string;
+  role: "user" | "agent";
+  message: string;
+  ts: string;
+}
+
+function ChatPanel() {
+  const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const unsubAgent = helmSocket.on("agent_message", (e: WsEvent) => {
+      const p = e.payload as { message: string; role?: string; ts?: string };
+      setMessages((m) => [...m, {
+        id: `a-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        role: "agent",
+        message: p.message,
+        ts: p.ts ?? new Date().toISOString(),
+      }]);
+    });
+    const unsubWake = helmSocket.on("wake", (e: WsEvent) => {
+      // Mirror outbound wakes from other surfaces (Topbar button, curl, etc).
+      const p = e.payload as { message?: string; source?: string; ts?: string };
+      if (!p.message || p.source === "webui-chat") return;  // own sends already shown
+      setMessages((m) => [...m, {
+        id: `w-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        role: "user",
+        message: `[${p.source ?? "external"}] ${p.message}`,
+        ts: p.ts ?? new Date().toISOString(),
+      }]);
+    });
+    return () => { unsubAgent(); unsubWake(); };
+  }, []);
+
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [messages]);
+
+  const send = async () => {
+    const text = input.trim();
+    if (!text || busy) return;
+    setBusy(true);
+    setMessages((m) => [...m, {
+      id: `u-${Date.now()}`,
+      role: "user",
+      message: text,
+      ts: new Date().toISOString(),
+    }]);
+    setInput("");
+    try {
+      await api.agentWake(text, { from: "webui-chat" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex h-full flex-col">
+      <div ref={scrollRef} className="scroll-y flex-1 px-3 py-2.5">
+        {messages.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-fg-faint">
+            <MessageSquare size={20} className="opacity-60" />
+            <div className="text-xs">Send a message to wake the agent.</div>
+            <div className="max-w-xs text-center text-2xs">
+              Each send fires a <code className="text-fg">wake</code> WS event the
+              agent's CLI receives via <code className="text-fg">helm-agent sleep --on-event wake</code>.
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {messages.map((m) => (
+              <div
+                key={m.id}
+                className={cn(
+                  "flex max-w-[85%] flex-col gap-0.5 rounded-lg px-2.5 py-1.5",
+                  m.role === "user"
+                    ? "ml-auto bg-accent/15 text-fg"
+                    : "mr-auto bg-bg-2 text-fg",
+                )}
+              >
+                <div className="flex items-center gap-1 text-2xs text-fg-faint">
+                  {m.role === "user" ? <User2 size={9} /> : <BrainCircuit size={9} />}
+                  <span>{m.role}</span>
+                  <span className="ml-auto">{relativeTime(m.ts)}</span>
+                </div>
+                <div className="whitespace-pre-wrap text-xs leading-relaxed">{m.message}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <form
+        className="flex flex-shrink-0 items-center gap-1.5 border-t border-border px-2 py-1.5"
+        onSubmit={(e) => { e.preventDefault(); void send(); }}
+      >
+        <input
+          type="text"
+          value={input}
+          disabled={busy}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Message agent (wakes the CLI)…"
+          className="flex-1 rounded-md border border-border bg-bg-2 px-2 py-1 text-xs text-fg
+            placeholder:text-fg-faint focus:border-accent focus:outline-none"
+        />
+        <button type="submit" disabled={busy || !input.trim()} className="btn h-7 px-2 text-xs">
+          <Send size={11} />
+          <span className="hidden sm:inline">Send</span>
+        </button>
+      </form>
+    </div>
+  );
+}
+
 // --- widget ------------------------------------------------------------------
+
+type AITab = "decisions" | "chat";
 
 export default function AIDecisionFeed(_props: WidgetProps) {
   const qc = useQueryClient();
+  const [tab, setTab] = useState<AITab>("decisions");
 
   const decisions = useQuery({
     queryKey: ["ai-decisions"],
@@ -252,19 +381,50 @@ export default function AIDecisionFeed(_props: WidgetProps) {
   return (
     <div className="flex h-full w-full flex-col">
       <StatusHeader status={status.data} />
-      <div className="scroll-y flex-1">
-        {decisions.isLoading ? (
-          <Loading label="Loading decisions…" />
-        ) : decisions.isError ? (
-          <ErrorState label="Decision feed unavailable" />
-        ) : rows.length === 0 ? (
-          <Empty label="No decisions yet" />
-        ) : (
-          <div className="flex flex-col gap-2 p-2.5">
-            {rows.map((d) => (
-              <DecisionCard key={d.id} d={d} />
-            ))}
+      <div className="flex flex-shrink-0 border-b border-border bg-bg-1">
+        {([
+          { id: "decisions", label: "Decisions", icon: BrainCircuit },
+          { id: "chat",      label: "Chat",      icon: MessageSquare },
+        ] as const).map((t) => {
+          const Icon = t.icon;
+          const active = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 text-2xs font-medium transition-colors",
+                active
+                  ? "border-b-2 border-accent text-fg"
+                  : "border-b-2 border-transparent text-fg-muted hover:text-fg",
+              )}
+            >
+              <Icon size={11} />
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex-1 overflow-hidden">
+        {tab === "decisions" ? (
+          <div className="scroll-y h-full">
+            {decisions.isLoading ? (
+              <Loading label="Loading decisions…" />
+            ) : decisions.isError ? (
+              <ErrorState label="Decision feed unavailable" />
+            ) : rows.length === 0 ? (
+              <Empty label="No decisions yet" />
+            ) : (
+              <div className="flex flex-col gap-2 p-2.5">
+                {rows.map((d) => (
+                  <DecisionCard key={d.id} d={d} />
+                ))}
+              </div>
+            )}
           </div>
+        ) : (
+          <ChatPanel />
         )}
       </div>
     </div>
