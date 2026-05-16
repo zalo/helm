@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
 import json
 import os
 import shutil
@@ -385,6 +386,49 @@ def cmd_say(args: argparse.Namespace) -> None:
     _emit({"posted": bool(data.get("posted")), "ts": (data.get("payload") or {}).get("ts")})
 
 
+_INSTRUMENT_RE = __import__("re").compile(r"^[A-Z0-9._/-]+\.[A-Z][A-Z0-9_]+$")
+
+
+def cmd_add_instrument(args: argparse.Namespace) -> None:
+    """Add a ticker to HELM_INSTRUMENTS. By default returns a 'restart_required'
+    notice; pass --restart to fire POST /api/agent/restart immediately after."""
+    iid = args.instrument.strip().upper() if args.upper else args.instrument.strip()
+    if not _INSTRUMENT_RE.match(iid):
+        _emit({"error": f"invalid instrument id {iid!r}",
+               "help": "use SYMBOL.VENUE (e.g. AAPL.NASDAQ, BTCUSDT.BINANCE)"})
+        sys.exit(2)
+    data = _request("POST", "/api/agent/instruments", json={"id": iid}) or {}
+    if args.restart and data.get("restart_required"):
+        _emit({"added": data.get("added"), "instruments": data.get("instruments"),
+               "restarting": True})
+        # Fire-and-forget; the response will arrive before re-exec.
+        with contextlib.suppress(Exception):
+            _request("POST", "/api/agent/restart")
+        return
+    _emit(data, suggestions=(
+        ["helm-agent restart                     # re-exec uvicorn so the engine sees it"]
+        if data.get("restart_required") else None
+    ))
+
+
+def cmd_remove_instrument(args: argparse.Namespace) -> None:
+    data = _request("DELETE", f"/api/agent/instruments/{args.instrument}") or {}
+    _emit(data, suggestions=(
+        ["helm-agent restart"] if data.get("restart_required") else None
+    ))
+
+
+def cmd_restart(_: argparse.Namespace) -> None:
+    """Trigger an in-process re-exec of uvicorn so .env changes take effect."""
+    data = _request("POST", "/api/agent/restart") or {}
+    _emit(data, suggestions=["helm-agent status                      # check the engine after a few seconds"])
+
+
+def cmd_pending(_: argparse.Namespace) -> None:
+    data = _request("GET", "/api/agent/pending") or {}
+    _emit(data)
+
+
 def cmd_pause(_: argparse.Namespace) -> None:
     data = _request("POST", "/api/ai/control", json={"action": "pause"}) or {}
     _emit({"ai_state": data.get("state"), "enabled": data.get("enabled")})
@@ -400,7 +444,28 @@ def cmd_resume(_: argparse.Namespace) -> None:
 # ----------------------------------------------------------------------------- #
 
 def cmd_sleep(args: argparse.Namespace) -> None:
-    """Block until any configured trigger fires. Prints the trigger result and exits 0."""
+    """Block until any configured trigger fires. Prints the trigger result and exits 0.
+
+    Before subscribing to /ws, polls /api/agent/pending — if there are unprocessed
+    wakes (delivered while the agent was busy or offline), emit the oldest one
+    immediately and exit. Caller can pass --no-pending to skip the queue check
+    and only watch live events.
+    """
+    if (
+        not args.no_pending
+        and (args.on_event is None or "wake" in args.on_event.split(","))
+    ):
+        pending = _request("GET", "/api/agent/pending") or {}
+        items = pending.get("messages") or []
+        if items:
+            head = items[0]
+            _emit({
+                "trigger": "queued",
+                "type": "wake",
+                "payload": head,
+                "queue_depth": len(items),
+            })
+            return
     asyncio.run(_sleep_async(args))
 
 
@@ -438,27 +503,41 @@ async def _sleep_async(args: argparse.Namespace) -> None:
         stdin_task = asyncio.create_task(_stdin_watch())
 
     async def _ws_loop():
+        """Connect, dispatch events, reconnect on any disconnect / dial failure.
+
+        A uvicorn restart (or any blip) drops /ws — without reconnect the sleep
+        would exit with a connection error rather than the wake the caller is
+        actually waiting for.
+        """
         url = WS_BASE + "/ws"
-        async with websockets.connect(url) as ws:
-            while True:
-                raw = await ws.recv()
-                try:
-                    msg = json.loads(raw)
-                except Exception:
-                    continue
-                etype = msg.get("type")
-                payload = msg.get("payload") or {}
-                if event_types and etype in event_types:
-                    return {"trigger": "event", "type": etype, "payload": payload}
-                if price_trigger and etype == "bar":
-                    inst, op, target = price_trigger
-                    if payload.get("instrument") == inst:
-                        c = float(payload.get("close", 0))
-                        hit = (op == ">" and c > target) or (op == ">=" and c >= target) \
-                              or (op == "<" and c < target) or (op == "<=" and c <= target)
-                        if hit:
-                            return {"trigger": "price", "instrument": inst, "op": op,
-                                    "target": target, "close": c}
+        attempt = 0
+        while True:
+            try:
+                async with websockets.connect(url) as ws:
+                    attempt = 0  # successful connect resets backoff
+                    while True:
+                        raw = await ws.recv()
+                        try:
+                            msg = json.loads(raw)
+                        except Exception:
+                            continue
+                        etype = msg.get("type")
+                        payload = msg.get("payload") or {}
+                        if event_types and etype in event_types:
+                            return {"trigger": "event", "type": etype, "payload": payload}
+                        if price_trigger and etype == "bar":
+                            inst, op, target = price_trigger
+                            if payload.get("instrument") == inst:
+                                c = float(payload.get("close", 0))
+                                hit = (op == ">" and c > target) or (op == ">=" and c >= target) \
+                                      or (op == "<" and c < target) or (op == "<=" and c <= target)
+                                if hit:
+                                    return {"trigger": "price", "instrument": inst, "op": op,
+                                            "target": target, "close": c}
+            except (OSError, ConnectionError, websockets.WebSocketException):
+                backoff = min(0.5 * (2 ** attempt), 10.0)
+                attempt += 1
+                await asyncio.sleep(backoff)
 
     ws_task = asyncio.create_task(_ws_loop()) if (event_types or price_trigger) else None
 
@@ -581,6 +660,16 @@ def _build_parser() -> argparse.ArgumentParser:
     sp.add_argument("order_id"); sp.set_defaults(fn=cmd_cancel)
     sp = sub.add_parser("close", help="flatten the open position on one instrument")
     sp.add_argument("instrument"); sp.set_defaults(fn=cmd_close)
+    sp = sub.add_parser("add-instrument", help="add a ticker to HELM_INSTRUMENTS")
+    sp.add_argument("instrument")
+    sp.add_argument("--restart", action="store_true", help="re-exec uvicorn after adding")
+    sp.add_argument("--no-upper", dest="upper", action="store_false", default=True,
+                    help="don't upper-case the instrument id before validating")
+    sp.set_defaults(fn=cmd_add_instrument)
+    sp = sub.add_parser("remove-instrument", help="remove a ticker from HELM_INSTRUMENTS")
+    sp.add_argument("instrument"); sp.set_defaults(fn=cmd_remove_instrument)
+    sub.add_parser("restart", help="re-exec uvicorn so the engine reloads .env").set_defaults(fn=cmd_restart)
+    sub.add_parser("pending", help="list queued unprocessed wake messages").set_defaults(fn=cmd_pending)
     sp = sub.add_parser("say", help="post a message back to the webui chat panel")
     sp.add_argument("message")
     sp.add_argument("--role", default="agent")
@@ -595,6 +684,8 @@ def _build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--on-price", help='INSTR>PX or INSTR<PX (e.g. "AAPL.NASDAQ>250")')
     sp.add_argument("--on-event", help='comma-separated WS event types (e.g. "bar,order,position")')
     sp.add_argument("--on-stdin", action="store_true", help="wake on stdin newline")
+    sp.add_argument("--no-pending", action="store_true",
+                    help="skip the /api/agent/pending queue precheck, only watch live events")
     sp.set_defaults(fn=cmd_sleep)
 
     sub.add_parser("install", help="self-install SessionStart hook for Claude Code").set_defaults(fn=cmd_install)

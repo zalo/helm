@@ -224,10 +224,12 @@ interface ChatMsg {
   role: "user" | "agent";
   message: string;
   ts: string;
+  source?: string;
 }
 
 const CHAT_STORAGE_KEY = "helm.chatHistory.v1";
 const CHAT_MAX_MESSAGES = 500;
+const TYPING_TIMEOUT_MS = 5 * 60 * 1000;
 
 function loadChatHistory(): ChatMsg[] {
   if (typeof window === "undefined") return [];
@@ -251,16 +253,25 @@ function saveChatHistory(messages: ChatMsg[]): void {
   }
 }
 
+function mergeMsg(prev: ChatMsg[], incoming: ChatMsg): ChatMsg[] {
+  if (prev.some((m) => m.id === incoming.id)) return prev;
+  // Insert in ts-sorted order so out-of-order delivery still renders right.
+  const out = [...prev, incoming];
+  out.sort((a, b) => a.ts.localeCompare(b.ts));
+  return out;
+}
+
 function ChatPanel() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>(loadChatHistory);
+  // Set when a user sends a wake; cleared on the next agent_message or timeout.
+  const [agentBusy, setAgentBusy] = useState(false);
+  const typingTimer = useRef<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // On mount, pull the canonical chat history from the backend (covers
   // messages that arrived while the tab was closed or on a different tab).
-  // Merge with whatever was already in localStorage so we don't lose messages
-  // the server might have forgotten (e.g. after a backend restart).
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -268,17 +279,18 @@ function ChatPanel() {
         const data = await api.agentChat(500);
         if (cancelled) return;
         setMessages((prev) => {
-          const seen = new Set(prev.map((m) => m.id));
-          const fromServer: ChatMsg[] = data.messages.map((m) => ({
-            id: `s-${m.ts}-${m.role}-${m.message.length}`,
-            role: m.role === "agent" ? "agent" : "user",
-            message: m.message,
-            ts: m.ts,
-          }));
-          const additions = fromServer.filter((m) => !seen.has(m.id));
-          const merged = [...prev, ...additions].sort((a, b) =>
-            a.ts.localeCompare(b.ts),
-          );
+          let merged = prev;
+          for (const m of data.messages) {
+            const id = (m as ChatMsg).id
+              ?? `s-${m.ts}-${m.role}-${m.message.length}`;
+            merged = mergeMsg(merged, {
+              id,
+              role: m.role === "agent" ? "agent" : "user",
+              message: m.message,
+              ts: m.ts,
+              source: m.source,
+            });
+          }
           return merged;
         });
       } catch { /* offline / endpoint missing — fall back to local-only */ }
@@ -286,8 +298,6 @@ function ChatPanel() {
     return () => { cancelled = true; };
   }, []);
 
-  // Persist on every change so a refresh / new tab visit keeps history even
-  // if the backend's ring buffer was cleared.
   useEffect(() => {
     saveChatHistory(messages);
   }, [messages]);
@@ -295,43 +305,54 @@ function ChatPanel() {
   useEffect(() => {
     const unsubAgent = helmSocket.on("agent_message", (e: WsEvent) => {
       const p = e.payload as { message: string; role?: string; ts?: string };
-      setMessages((m) => [...m, {
-        id: `a-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      const ts = p.ts ?? new Date().toISOString();
+      setMessages((m) => mergeMsg(m, {
+        id: `a-${ts}-${p.message.length}`,
         role: "agent",
         message: p.message,
-        ts: p.ts ?? new Date().toISOString(),
-      }]);
+        ts,
+      }));
+      setAgentBusy(false);
+      if (typingTimer.current) window.clearTimeout(typingTimer.current);
     });
     const unsubWake = helmSocket.on("wake", (e: WsEvent) => {
-      // Mirror outbound wakes from other surfaces (Topbar button, curl, etc).
-      const p = e.payload as { message?: string; source?: string; ts?: string };
-      if (!p.message || p.source === "webui-chat") return;  // own sends already shown
-      setMessages((m) => [...m, {
-        id: `w-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      const p = e.payload as { id?: string; message?: string; source?: string; ts?: string };
+      if (!p.message) return;
+      const ts = p.ts ?? new Date().toISOString();
+      // Use the backend-assigned id when present so own sends, external sends,
+      // and history hydration all converge on the same key (no duplicates).
+      const id = p.id ? `w-${p.id}` : `w-${ts}-${p.message.length}`;
+      setMessages((m) => mergeMsg(m, {
+        id,
         role: "user",
-        message: `[${p.source ?? "external"}] ${p.message}`,
-        ts: p.ts ?? new Date().toISOString(),
-      }]);
+        message: p.message!,
+        ts,
+        source: p.source,
+      }));
+      // Any inbound user message means a CLI worker should be processing it.
+      setAgentBusy(true);
+      if (typingTimer.current) window.clearTimeout(typingTimer.current);
+      typingTimer.current = window.setTimeout(() => setAgentBusy(false), TYPING_TIMEOUT_MS);
     });
-    return () => { unsubAgent(); unsubWake(); };
+    return () => {
+      unsubAgent();
+      unsubWake();
+      if (typingTimer.current) window.clearTimeout(typingTimer.current);
+    };
   }, []);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages]);
+  }, [messages, agentBusy]);
 
   const send = async () => {
     const text = input.trim();
     if (!text || busy) return;
     setBusy(true);
-    setMessages((m) => [...m, {
-      id: `u-${Date.now()}`,
-      role: "user",
-      message: text,
-      ts: new Date().toISOString(),
-    }]);
     setInput("");
     try {
+      // Don't add a local bubble — wait for the WS echo so the id (server-assigned)
+      // matches what hydration would produce. Eliminates dup bubbles entirely.
       await api.agentWake(text, { from: "webui-chat" });
     } finally {
       setBusy(false);
@@ -365,11 +386,29 @@ function ChatPanel() {
                 <div className="flex items-center gap-1 text-2xs text-fg-faint">
                   {m.role === "user" ? <User2 size={9} /> : <BrainCircuit size={9} />}
                   <span>{m.role}</span>
+                  {m.role === "user" && m.source && m.source !== "webui" && m.source !== "webui-chat" && (
+                    <span className="rounded bg-bg-3 px-1 py-px text-2xs text-fg-faint">
+                      via {m.source}
+                    </span>
+                  )}
                   <span className="ml-auto">{relativeTime(m.ts)}</span>
                 </div>
                 <div className="whitespace-pre-wrap text-xs leading-relaxed">{m.message}</div>
               </div>
             ))}
+            {agentBusy && (
+              <div className="mr-auto flex items-center gap-1.5 rounded-lg bg-bg-2 px-2.5 py-1.5">
+                <span className="flex items-center gap-1 text-2xs text-fg-faint">
+                  <BrainCircuit size={9} />
+                  <span>agent</span>
+                </span>
+                <span className="flex items-center gap-0.5">
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-fg-faint [animation-delay:-0.2s]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-fg-faint [animation-delay:-0.1s]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-fg-faint" />
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -399,9 +438,21 @@ function ChatPanel() {
 
 type AITab = "decisions" | "chat";
 
+const AI_TAB_STORAGE_KEY = "helm.aiDecisionFeed.tab";
+
+function loadAITab(): AITab {
+  if (typeof window === "undefined") return "decisions";
+  const v = window.localStorage.getItem(AI_TAB_STORAGE_KEY);
+  return v === "chat" ? "chat" : "decisions";
+}
+
 export default function AIDecisionFeed(_props: WidgetProps) {
   const qc = useQueryClient();
-  const [tab, setTab] = useState<AITab>("decisions");
+  const [tab, setTabRaw] = useState<AITab>(loadAITab);
+  const setTab = (next: AITab) => {
+    setTabRaw(next);
+    try { window.localStorage.setItem(AI_TAB_STORAGE_KEY, next); } catch { /* quota */ }
+  };
 
   const decisions = useQuery({
     queryKey: ["ai-decisions"],

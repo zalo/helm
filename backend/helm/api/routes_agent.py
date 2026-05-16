@@ -97,6 +97,168 @@ async def close_position(instrument: str) -> dict[str, Any]:
     }
 
 
+import re
+
+_INSTRUMENT_PATTERN = re.compile(r"^[A-Z0-9._/-]+\.[A-Z][A-Z0-9_]+$")
+_ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
+_INSTRUMENTS_KEY = "HELM_INSTRUMENTS"
+
+
+def _read_env_instruments() -> list[str]:
+    """Best-effort current instruments list — runtime cache first, then .env."""
+    try:
+        return list(get_engine().settings.instruments)
+    except Exception:
+        pass
+    if _ENV_PATH.exists():
+        for line in _ENV_PATH.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if line.startswith(_INSTRUMENTS_KEY + "="):
+                raw = line.split("=", 1)[1].strip()
+                if raw.startswith("["):
+                    try:
+                        return json.loads(raw)
+                    except Exception:
+                        pass
+                return [s.strip() for s in raw.split(",") if s.strip()]
+    return []
+
+
+def _write_env_instruments(items: list[str]) -> None:
+    """Idempotent: write/replace ``HELM_INSTRUMENTS=[...]`` in-place in .env."""
+    payload = json.dumps(items)
+    if _ENV_PATH.exists():
+        lines = _ENV_PATH.read_text().splitlines()
+        replaced = False
+        out: list[str] = []
+        for ln in lines:
+            if ln.strip().startswith(_INSTRUMENTS_KEY + "="):
+                out.append(f"{_INSTRUMENTS_KEY}={payload}")
+                replaced = True
+            else:
+                out.append(ln)
+        if not replaced:
+            out.append(f"{_INSTRUMENTS_KEY}={payload}")
+        _ENV_PATH.write_text("\n".join(out).rstrip() + "\n")
+    else:
+        _ENV_PATH.write_text(f"{_INSTRUMENTS_KEY}={payload}\n")
+
+
+class AddInstrumentRequest(BaseModel):
+    id: str = Field(..., description="Instrument id, e.g. AAPL.NASDAQ")
+
+
+@router.post("/instruments")
+async def add_instrument(req: AddInstrumentRequest) -> dict[str, Any]:
+    iid = req.id.strip()
+    if not _INSTRUMENT_PATTERN.match(iid):
+        raise HTTPException(
+            status_code=400,
+            detail=f"{iid!r} doesn't look like a Nautilus instrument id "
+                   "(expected SYMBOL.VENUE, e.g. AAPL.NASDAQ)",
+        )
+    current = _read_env_instruments()
+    if iid in current:
+        return {"id": iid, "added": False, "instruments": current,
+                "restart_required": False, "note": "already configured (no-op)"}
+    next_list = current + [iid]
+    _write_env_instruments(next_list)
+    return {"id": iid, "added": True, "instruments": next_list,
+            "restart_required": True,
+            "note": "added to .env; call POST /api/agent/restart (or "
+                    "`helm-agent restart`) to load it into the engine"}
+
+
+@router.delete("/instruments/{instrument_id}")
+async def remove_instrument(instrument_id: str) -> dict[str, Any]:
+    current = _read_env_instruments()
+    if instrument_id not in current:
+        return {"id": instrument_id, "removed": False, "instruments": current,
+                "restart_required": False, "note": "not in the configured list (no-op)"}
+    next_list = [x for x in current if x != instrument_id]
+    _write_env_instruments(next_list)
+    return {"id": instrument_id, "removed": True, "instruments": next_list,
+            "restart_required": True}
+
+
+# --- self-restart (friction #3) ----------------------------------------------
+
+@router.post("/restart")
+async def restart_engine() -> dict[str, Any]:
+    """Schedule an in-process ``os.execv`` so the FastAPI app re-reads .env.
+
+    Returns 200 immediately; the actual re-exec happens after the response is
+    flushed so the client doesn't see a hang or connection reset.
+    """
+    import asyncio
+    import os
+    import sys
+
+    async def _later() -> None:
+        await asyncio.sleep(0.2)  # let the HTTP response flush
+        os.execv(sys.executable, [sys.executable, "-m", "uvicorn",
+                                  "helm.main:app", "--host", "127.0.0.1",
+                                  "--port", "8000"])
+
+    asyncio.create_task(_later())
+    return {"restarting": True, "in_seconds": 0.2}
+
+
+# --- pending message queue (delivery-once for agent wakes) -------------------
+#
+# The chat ring buffer is the durable conversation log. The pending queue is
+# a thin delivery layer that lets the live agent see only what it hasn't
+# acted on yet — even messages that arrived while it was busy or offline.
+# A successful `say` auto-acks the oldest pending wake.
+
+import uuid
+
+_pending_lock = threading.Lock()
+_pending: deque[dict[str, Any]] = deque(maxlen=200)
+
+
+def _enqueue_wake(message: str, source: str, data: dict[str, Any]) -> dict[str, Any]:
+    entry = {
+        "id": uuid.uuid4().hex[:12],
+        "message": message,
+        "source": source,
+        "data": data,
+        "ts": datetime.now(timezone.utc).isoformat(),
+    }
+    with _pending_lock:
+        _pending.append(entry)
+    return entry
+
+
+def _ack_oldest() -> dict[str, Any] | None:
+    with _pending_lock:
+        if not _pending:
+            return None
+        return _pending.popleft()
+
+
+@router.get("/pending")
+async def get_pending() -> dict[str, Any]:
+    """Return all unprocessed wake messages, oldest first."""
+    with _pending_lock:
+        items = list(_pending)
+    return {"count": len(items), "messages": items}
+
+
+@router.post("/ack/{message_id}")
+async def ack_message(message_id: str) -> dict[str, Any]:
+    """Mark a specific queued wake as processed (idempotent no-op if missing)."""
+    with _pending_lock:
+        before = len(_pending)
+        kept = [m for m in _pending if m["id"] != message_id]
+        _pending.clear()
+        _pending.extend(kept)
+        removed = before - len(_pending)
+    return {"id": message_id, "acked": removed > 0, "remaining": len(kept)}
+
+
 class WakeRequest(BaseModel):
     """Webui-driven wake-up signal for a waiting `helm-agent sleep --on-event wake`."""
     message: str = Field("", description="Free-form message for the waiting agent")
@@ -106,17 +268,21 @@ class WakeRequest(BaseModel):
 
 @router.post("/wake")
 async def wake_agent(req: WakeRequest) -> dict[str, Any]:
+    queued: dict[str, Any] | None = None
+    if req.message:
+        queued = _enqueue_wake(req.message, req.source, req.data)
+        _append_chat({"role": "user", "message": req.message,
+                      "source": req.source, "ts": queued["ts"],
+                      "id": queued["id"]})
     payload = {
+        "id": queued["id"] if queued else None,
         "message": req.message,
         "source": req.source,
         "data": req.data,
-        "ts": datetime.now(timezone.utc).isoformat(),
+        "ts": queued["ts"] if queued else datetime.now(timezone.utc).isoformat(),
     }
-    if req.message:
-        _append_chat({"role": "user", "message": req.message,
-                      "source": req.source, "ts": payload["ts"]})
     await get_broadcaster().publish("wake", payload)
-    return {"woken": True, "payload": payload}
+    return {"woken": True, "queued": queued is not None, "payload": payload}
 
 
 class AgentSayRequest(BaseModel):
@@ -135,8 +301,11 @@ async def agent_say(req: AgentSayRequest) -> dict[str, Any]:
         "ts": datetime.now(timezone.utc).isoformat(),
     }
     _append_chat({"role": req.role, "message": req.message, "ts": payload["ts"]})
+    # A reply implicitly acknowledges the oldest unprocessed wake.
+    acked = _ack_oldest()
     await get_broadcaster().publish("agent_message", payload)
-    return {"posted": True, "payload": payload}
+    return {"posted": True, "payload": payload,
+            "acked_wake_id": acked["id"] if acked else None}
 
 
 @router.get("/chat")

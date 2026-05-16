@@ -121,8 +121,20 @@ function ExploreTab() {
 
 // --- mobile shell ------------------------------------------------------------
 
+const MOBILE_TAB_STORAGE_KEY = "helm.mobileView.tab";
+
+function loadMobileTab(): Tab {
+  if (typeof window === "undefined") return "portfolio";
+  const v = window.localStorage.getItem(MOBILE_TAB_STORAGE_KEY);
+  return (TABS.some((t) => t.id === v) ? v : "portfolio") as Tab;
+}
+
 export function MobileView() {
-  const [tab, setTab] = useState<Tab>("portfolio");
+  const [tab, setTabRaw] = useState<Tab>(loadMobileTab);
+  const setTab = (next: Tab) => {
+    setTabRaw(next);
+    try { window.localStorage.setItem(MOBILE_TAB_STORAGE_KEY, next); } catch { /* quota */ }
+  };
   const [chartConfig, setChartConfig] = useState<ChartConfig>({});
 
   const patchChart = useCallback(

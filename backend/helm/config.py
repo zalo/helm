@@ -7,12 +7,32 @@ simulator — so the whole stack works with zero credentials.
 
 from __future__ import annotations
 
+import json
 from functools import lru_cache
+from typing import Annotated, Any
 
-from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 from helm.models import EngineMode
+
+
+def _parse_str_list(v: Any) -> Any:
+    """Accept ``HELM_*`` list fields as JSON arrays OR comma-separated strings.
+
+    pydantic-settings out-of-the-box only parses JSON for complex types, so
+    ``HELM_INSTRUMENTS=AAPL.NASDAQ,NVDA.NASDAQ`` would crash startup with
+    ``SettingsError: error parsing value for field 'instruments'``. This
+    validator forgives both shapes.
+    """
+    if isinstance(v, str):
+        s = v.strip()
+        if not s:
+            return []
+        if s.startswith("["):
+            return json.loads(s)
+        return [tok.strip() for tok in s.split(",") if tok.strip()]
+    return v
 
 
 class Settings(BaseSettings):
@@ -30,8 +50,10 @@ class Settings(BaseSettings):
     starting_equity: float = 100_000.0
     base_currency: str = "USD"
 
-    # Instruments the demo simulator / default subscriptions cover.
-    instruments: list[str] = Field(
+    # Instruments the demo simulator / default subscriptions cover. ``NoDecode``
+    # tells pydantic-settings not to eagerly JSON-decode the env var so our
+    # below validator can accept either CSV or JSON-array forms.
+    instruments: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: [
             "AAPL.NASDAQ",
             "NVDA.NASDAQ",
@@ -76,7 +98,7 @@ class Settings(BaseSettings):
     openbb_pat: str | None = None
 
     # --- HTTP / server ---
-    cors_origins: list[str] = Field(
+    cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: [
             "http://localhost:5173",
             "http://127.0.0.1:5173",
@@ -84,6 +106,13 @@ class Settings(BaseSettings):
     )
     feed_cache_ttl_s: int = 300
     http_user_agent: str = "Helm/0.1 (+https://github.com/helm-trading/helm)"
+
+    _normalize_instruments = field_validator("instruments", mode="before")(
+        _parse_str_list,
+    )
+    _normalize_cors = field_validator("cors_origins", mode="before")(
+        _parse_str_list,
+    )
 
 
 @lru_cache
