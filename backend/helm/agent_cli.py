@@ -383,7 +383,14 @@ def cmd_say(args: argparse.Namespace) -> None:
     """Post a message back to the webui chat panel."""
     body = {"message": args.message, "role": args.role}
     data = _request("POST", "/api/agent/say", json=body) or {}
-    _emit({"posted": bool(data.get("posted")), "ts": (data.get("payload") or {}).get("ts")})
+    _emit(
+        {"posted": bool(data.get("posted")),
+         "ts": (data.get("payload") or {}).get("ts"),
+         "acked_wake_id": data.get("acked_wake_id")},
+        suggestions=[
+            "helm-agent sleep --on-event wake       # RE-ARM so the next webui msg can fire",
+        ],
+    )
 
 
 _INSTRUMENT_RE = __import__("re").compile(r"^[A-Z0-9._/-]+\.[A-Z][A-Z0-9_]+$")
@@ -459,12 +466,18 @@ def cmd_sleep(args: argparse.Namespace) -> None:
         items = pending.get("messages") or []
         if items:
             head = items[0]
-            _emit({
-                "trigger": "queued",
-                "type": "wake",
-                "payload": head,
-                "queue_depth": len(items),
-            })
+            _emit(
+                {
+                    "trigger": "queued",
+                    "type": "wake",
+                    "payload": head,
+                    "queue_depth": len(items),
+                },
+                suggestions=[
+                    'helm-agent say "<reply>"                 # auto-acks this wake',
+                    "helm-agent sleep --on-event wake        # RE-ARM after replying",
+                ],
+            )
             return
     asyncio.run(_sleep_async(args))
 
@@ -569,10 +582,15 @@ async def _sleep_async(args: argparse.Namespace) -> None:
         return
 
     result = done.pop().result()
+    is_wake = isinstance(result, dict) and result.get("type") == "wake"
+    suggestions = [
+        'helm-agent say "<reply>"                 # auto-acks the pending wake',
+        "helm-agent sleep --on-event wake        # RE-ARM after replying",
+    ] if is_wake else None
     if isinstance(result, str):  # stdin readline
         _emit({"trigger": "stdin", "line": result.rstrip()})
     else:
-        _emit(result)
+        _emit(result, suggestions=suggestions)
 
 
 # ----------------------------------------------------------------------------- #
@@ -614,14 +632,35 @@ def cmd_install(_: argparse.Namespace) -> None:
 # Entry point
 # ----------------------------------------------------------------------------- #
 
+_REARM_LOOP = (
+    "Re-arm loop (always end a turn parked on the wake event):\n"
+    "  1. helm-agent sleep --on-event wake          # block until a webui chat msg\n"
+    "  2. <process the returned trigger payload>\n"
+    "  3. helm-agent say \"<reply>\"                  # post a reply (auto-acks pending)\n"
+    "  4. helm-agent sleep --on-event wake          # re-arm before ending the turn\n"
+    "\n"
+    "  The .claude/hooks/enforce_sleep_arm.py Stop-hook BLOCKS turn-end if the\n"
+    "  last Bash call wasn't `helm-agent sleep --on-event wake`. If you skip\n"
+    "  step 4 the hook will re-inject a system reminder forcing you to do it.\n"
+    "  `helm-agent sleep` pre-polls /api/agent/pending so any wakes that\n"
+    "  arrived while you were busy are returned immediately as `trigger:\n"
+    "  queued` — no message is ever dropped."
+)
+
+
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="helm-agent", description=DESC,
                                 formatter_class=argparse.RawDescriptionHelpFormatter,
-                                epilog="Examples:\n"
-                                       "  helm-agent                       # live status snapshot\n"
-                                       "  helm-agent bars AAPL.NASDAQ --count 50\n"
-                                       "  helm-agent submit AAPL.NASDAQ BUY 10\n"
-                                       "  helm-agent sleep --on-event bar,order\n")
+                                epilog=(
+                                    "Examples:\n"
+                                    "  helm-agent                              # live status snapshot\n"
+                                    "  helm-agent bars AAPL.NASDAQ --count 50\n"
+                                    "  helm-agent submit AAPL.NASDAQ BUY 10\n"
+                                    "  helm-agent sleep --on-event wake        # park until next webui chat\n"
+                                    "  helm-agent say \"<reply>\"                # post a reply\n"
+                                    "\n"
+                                    + _REARM_LOOP
+                                ))
     p.add_argument("--json", action="store_true", help="emit raw JSON instead of TOON")
     p.add_argument("--version", action="version", version=f"helm-agent {VERSION}")
     sub = p.add_subparsers(dest="command")
@@ -670,7 +709,18 @@ def _build_parser() -> argparse.ArgumentParser:
     sp.add_argument("instrument"); sp.set_defaults(fn=cmd_remove_instrument)
     sub.add_parser("restart", help="re-exec uvicorn so the engine reloads .env").set_defaults(fn=cmd_restart)
     sub.add_parser("pending", help="list queued unprocessed wake messages").set_defaults(fn=cmd_pending)
-    sp = sub.add_parser("say", help="post a message back to the webui chat panel")
+    sp = sub.add_parser(
+        "say",
+        help="post a message back to the webui chat panel",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Broadcast an agent_message event so the Chat sub-tab in the AI\n"
+            "Decisions widget renders it. Automatically acks the oldest pending\n"
+            "wake on the server. After say, RE-ARM with:\n"
+            "\n"
+            "    helm-agent sleep --on-event wake\n"
+        ),
+    )
     sp.add_argument("message")
     sp.add_argument("--role", default="agent")
     sp.set_defaults(fn=cmd_say)
@@ -678,11 +728,29 @@ def _build_parser() -> argparse.ArgumentParser:
     sub.add_parser("resume", help="resume the in-engine AI trader").set_defaults(fn=cmd_resume)
 
     # Sleep
-    sp = sub.add_parser("sleep", help="block until a trigger fires (price/event/stdin/time)")
+    sp = sub.add_parser(
+        "sleep",
+        help="block until a trigger fires (price/event/stdin/time)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Park the agent until something happens. The canonical end-of-turn\n"
+            "call for an agent operating helm-agent is:\n"
+            "\n"
+            "    helm-agent sleep --on-event wake\n"
+            "\n"
+            "Before subscribing to /ws, this polls /api/agent/pending — if any\n"
+            "wakes arrived while the agent was busy (or restarted), the oldest\n"
+            "is returned IMMEDIATELY as `trigger: queued` and the queue depth\n"
+            "is included. The matching `helm-agent say` call later acks the\n"
+            "oldest entry. Pass --no-pending to skip the queue check.\n"
+            "\n"
+            + _REARM_LOOP
+        ),
+    )
     sp.add_argument("--seconds", type=float, default=None)
     sp.add_argument("--until", help="absolute ISO-8601 deadline, e.g. 2026-05-16T13:30:00Z")
     sp.add_argument("--on-price", help='INSTR>PX or INSTR<PX (e.g. "AAPL.NASDAQ>250")')
-    sp.add_argument("--on-event", help='comma-separated WS event types (e.g. "bar,order,position")')
+    sp.add_argument("--on-event", help='comma-separated WS event types (e.g. "bar,order,position,wake")')
     sp.add_argument("--on-stdin", action="store_true", help="wake on stdin newline")
     sp.add_argument("--no-pending", action="store_true",
                     help="skip the /api/agent/pending queue precheck, only watch live events")
