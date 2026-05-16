@@ -297,3 +297,79 @@ class HealthResponse(BaseModel):
     nautilus_available: bool
     openbb_available: bool
     engine_running: bool
+
+
+# --------------------------------------------------------------------------- #
+# Nautilus artifacts: backtests + risk analyses
+# --------------------------------------------------------------------------- #
+
+
+class BacktestTrade(BaseModel):
+    ts: datetime
+    instrument: str
+    side: Literal["BUY", "SELL"]
+    quantity: float
+    price: float
+    pnl: float | None = None
+
+
+class BacktestSummary(BaseModel):
+    """List-view fields — keep small so list endpoints stay token-efficient."""
+
+    id: str
+    name: str
+    strategy: str
+    instruments: list[str]
+    start: datetime
+    end: datetime
+    final_equity: float
+    starting_equity: float
+    total_return_pct: float
+    sharpe: float | None = None
+    max_drawdown_pct: float | None = None
+    trades_count: int
+
+
+class BacktestResult(BacktestSummary):
+    """Full result — includes the equity curve and individual trades."""
+
+    equity_curve: list[EquityPoint] = Field(default_factory=list)
+    trades: list[BacktestTrade] = Field(default_factory=list)
+    notes: str | None = None
+
+
+class RiskExposure(BaseModel):
+    instrument: str
+    quantity: float
+    market_value: float
+    weight: float  # fraction of equity
+    beta: float | None = None
+
+
+class RiskScenario(BaseModel):
+    name: str
+    pnl_pct: float
+    description: str | None = None
+
+
+class RiskAnalysisSummary(BaseModel):
+    id: str
+    name: str
+    ts: datetime
+    portfolio_equity: float
+    gross_exposure: float
+    net_exposure: float
+    var_95: float | None = None
+
+
+class RiskAnalysisResult(RiskAnalysisSummary):
+    exposures: list[RiskExposure] = Field(default_factory=list)
+    scenarios: list[RiskScenario] = Field(default_factory=list)
+    notes: str | None = None
+
+
+class StrategyInfo(BaseModel):
+    id: str
+    name: str
+    kind: Literal["live", "backtest", "ad-hoc"]
+    description: str

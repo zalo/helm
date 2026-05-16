@@ -1,0 +1,32 @@
+{
+  "id": "multi-nasdaq-2026q1",
+  "name": "AAPL/NVDA/TSLA basket — 2026 Q1",
+  "strategy": "ai-trader",
+  "instruments": ["AAPL.NASDAQ", "NVDA.NASDAQ", "TSLA.NASDAQ"],
+  "start": "2026-01-02T14:30:00Z",
+  "end": "2026-03-31T20:00:00Z",
+  "starting_equity": 1000000.0,
+  "final_equity": 1042100.0,
+  "total_return_pct": 4.21,
+  "sharpe": 0.84,
+  "max_drawdown_pct": -8.95,
+  "trades_count": 132,
+  "notes": "Cross-instrument allocation. NVDA dragged on the rate-hike pivot in mid-Feb; AAPL momentum recovered into March.",
+  "equity_curve": [
+    {"ts": "2026-01-02T14:30:00Z", "equity": 1000000.0},
+    {"ts": "2026-01-17T20:00:00Z", "equity": 1018500.0},
+    {"ts": "2026-01-31T20:00:00Z", "equity": 1031200.0},
+    {"ts": "2026-02-14T20:00:00Z", "equity":  977300.0},
+    {"ts": "2026-02-28T20:00:00Z", "equity":  985400.0},
+    {"ts": "2026-03-14T20:00:00Z", "equity": 1014200.0},
+    {"ts": "2026-03-31T20:00:00Z", "equity": 1042100.0}
+  ],
+  "trades": [
+    {"ts": "2026-01-05T15:02:00Z", "instrument": "NVDA.NASDAQ", "side": "BUY",  "quantity": 200, "price": 138.40, "pnl": 1200.00},
+    {"ts": "2026-01-09T18:24:00Z", "instrument": "NVDA.NASDAQ", "side": "SELL", "quantity": 200, "price": 144.40, "pnl": 1200.00},
+    {"ts": "2026-02-12T14:55:00Z", "instrument": "TSLA.NASDAQ", "side": "BUY",  "quantity":  60, "price": 251.80, "pnl": -2800.00},
+    {"ts": "2026-02-20T19:35:00Z", "instrument": "TSLA.NASDAQ", "side": "SELL", "quantity":  60, "price": 205.13, "pnl": -2800.00},
+    {"ts": "2026-03-10T14:08:00Z", "instrument": "AAPL.NASDAQ", "side": "BUY",  "quantity": 120, "price": 248.60, "pnl": 1860.00},
+    {"ts": "2026-03-26T19:48:00Z", "instrument": "AAPL.NASDAQ", "side": "SELL", "quantity": 120, "price": 264.10, "pnl": 1860.00}
+  ]
+}

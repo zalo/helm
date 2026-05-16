@@ -210,6 +210,80 @@ export interface AgentChatMessage {
   source?: string;
 }
 
+// --- Nautilus artifacts -------------------------------------------------------
+
+export interface BacktestTrade {
+  ts: string;
+  instrument: string;
+  side: "BUY" | "SELL";
+  quantity: number;
+  price: number;
+  pnl?: number | null;
+}
+
+export interface BacktestEquityPoint {
+  ts: string;
+  equity: number;
+}
+
+export interface BacktestSummary {
+  id: string;
+  name: string;
+  strategy: string;
+  instruments: string[];
+  start: string;
+  end: string;
+  starting_equity: number;
+  final_equity: number;
+  total_return_pct: number;
+  sharpe?: number | null;
+  max_drawdown_pct?: number | null;
+  trades_count: number;
+}
+
+export interface BacktestResult extends BacktestSummary {
+  equity_curve: BacktestEquityPoint[];
+  trades: BacktestTrade[];
+  notes?: string | null;
+}
+
+export interface RiskExposure {
+  instrument: string;
+  quantity: number;
+  market_value: number;
+  weight: number;
+  beta?: number | null;
+}
+
+export interface RiskScenario {
+  name: string;
+  pnl_pct: number;
+  description?: string | null;
+}
+
+export interface RiskAnalysisSummary {
+  id: string;
+  name: string;
+  ts: string;
+  portfolio_equity: number;
+  gross_exposure: number;
+  net_exposure: number;
+  var_95?: number | null;
+}
+
+export interface RiskAnalysisResult extends RiskAnalysisSummary {
+  exposures: RiskExposure[];
+  scenarios: RiskScenario[];
+  notes?: string | null;
+}
+
+export interface StrategyInfo {
+  id: string;
+  name: string;
+  kind: "live" | "backtest" | "ad-hoc";
+  description: string;
+}
+
 export interface LogEntry {
   ts: string;
   level: "debug" | "info" | "warning" | "error";

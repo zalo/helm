@@ -436,6 +436,85 @@ def cmd_pending(_: argparse.Namespace) -> None:
     _emit(data)
 
 
+# --- Nautilus artifacts: backtests + risk + strategies ----------------------
+
+def cmd_backtests(_: argparse.Namespace) -> None:
+    data = _request("GET", "/api/agent/backtests") or []
+    rows = [{
+        "id": b["id"], "name": _trunc(b["name"], 60)["value"], "strategy": b["strategy"],
+        "start": b["start"][:10], "end": b["end"][:10],
+        "ret_pct": b["total_return_pct"], "sharpe": b.get("sharpe"),
+        "dd_pct": b.get("max_drawdown_pct"), "trades": b["trades_count"],
+    } for b in data]
+    _emit({"backtests_count": len(rows), "backtests": rows},
+          suggestions=[
+              "helm-agent backtest <id>               # full equity curve + trades",
+              "helm-agent strategies                  # what backtest harnesses exist",
+          ] if rows else None)
+
+
+def cmd_backtest(args: argparse.Namespace) -> None:
+    data = _request("GET", f"/api/agent/backtests/{args.id}") or {}
+    if not data:
+        return
+    eq = data.get("equity_curve") or []
+    trades = data.get("trades") or []
+    summary = {
+        "id": data.get("id"), "name": data.get("name"), "strategy": data.get("strategy"),
+        "instruments": data.get("instruments"),
+        "period": f"{(data.get('start') or '')[:10]} → {(data.get('end') or '')[:10]}",
+        "starting_equity": data.get("starting_equity"),
+        "final_equity": data.get("final_equity"),
+        "total_return_pct": data.get("total_return_pct"),
+        "sharpe": data.get("sharpe"),
+        "max_drawdown_pct": data.get("max_drawdown_pct"),
+        "trades_count": data.get("trades_count"),
+        "notes": _trunc(data.get("notes"), 500)["value"],
+        "equity_curve_points": len(eq),
+        "trades_shown": min(len(trades), args.trades),
+        "trades": [{"ts": t["ts"][:19], "instrument": t["instrument"], "side": t["side"],
+                    "qty": t["quantity"], "px": t["price"], "pnl": t.get("pnl")}
+                   for t in trades[: args.trades]],
+    }
+    _emit(summary)
+
+
+def cmd_risk(_: argparse.Namespace) -> None:
+    data = _request("GET", "/api/agent/risk") or []
+    rows = [{
+        "id": r["id"], "name": _trunc(r["name"], 60)["value"],
+        "ts": r["ts"][:19], "equity": r["portfolio_equity"],
+        "gross_exp": r["gross_exposure"], "net_exp": r["net_exposure"],
+        "var_95": r.get("var_95"),
+    } for r in data]
+    _emit({"risk_count": len(rows), "risk": rows},
+          suggestions=["helm-agent risk-view <id>             # exposures + scenarios"] if rows else None)
+
+
+def cmd_risk_view(args: argparse.Namespace) -> None:
+    data = _request("GET", f"/api/agent/risk/{args.id}") or {}
+    if not data:
+        return
+    _emit({
+        "id": data.get("id"), "name": data.get("name"),
+        "ts": (data.get("ts") or "")[:19],
+        "portfolio_equity": data.get("portfolio_equity"),
+        "gross_exposure": data.get("gross_exposure"),
+        "net_exposure": data.get("net_exposure"),
+        "var_95": data.get("var_95"),
+        "notes": _trunc(data.get("notes"), 500)["value"],
+        "exposures": data.get("exposures") or [],
+        "scenarios": data.get("scenarios") or [],
+    })
+
+
+def cmd_strategies(_: argparse.Namespace) -> None:
+    data = _request("GET", "/api/agent/strategies") or []
+    rows = [{"id": s["id"], "name": s["name"], "kind": s["kind"],
+             "description": _trunc(s["description"], 90)["value"]} for s in data]
+    _emit({"strategies_count": len(rows), "strategies": rows})
+
+
 def cmd_pause(_: argparse.Namespace) -> None:
     data = _request("POST", "/api/ai/control", json={"action": "pause"}) or {}
     _emit({"ai_state": data.get("state"), "enabled": data.get("enabled")})
@@ -709,6 +788,17 @@ def _build_parser() -> argparse.ArgumentParser:
     sp.add_argument("instrument"); sp.set_defaults(fn=cmd_remove_instrument)
     sub.add_parser("restart", help="re-exec uvicorn so the engine reloads .env").set_defaults(fn=cmd_restart)
     sub.add_parser("pending", help="list queued unprocessed wake messages").set_defaults(fn=cmd_pending)
+
+    # Nautilus artifacts (first-class)
+    sub.add_parser("backtests", help="list saved Nautilus backtest results").set_defaults(fn=cmd_backtests)
+    sp = sub.add_parser("backtest", help="view one backtest result (summary + trades)")
+    sp.add_argument("id"); sp.add_argument("--trades", type=int, default=20,
+                                            help="how many trades to include (default 20)")
+    sp.set_defaults(fn=cmd_backtest)
+    sub.add_parser("risk", help="list saved risk analyses").set_defaults(fn=cmd_risk)
+    sp = sub.add_parser("risk-view", help="view one risk analysis (exposures + scenarios)")
+    sp.add_argument("id"); sp.set_defaults(fn=cmd_risk_view)
+    sub.add_parser("strategies", help="list Nautilus strategies the engine knows about").set_defaults(fn=cmd_strategies)
     sp = sub.add_parser(
         "say",
         help="post a message back to the webui chat panel",

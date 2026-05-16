@@ -1,0 +1,34 @@
+{
+  "id": "aapl-momentum-2025q4",
+  "name": "AAPL momentum — 2025 Q4",
+  "strategy": "ai-trader",
+  "instruments": ["AAPL.NASDAQ"],
+  "start": "2025-10-01T13:30:00Z",
+  "end": "2025-12-31T20:00:00Z",
+  "starting_equity": 100000.0,
+  "final_equity": 112480.50,
+  "total_return_pct": 12.48,
+  "sharpe": 1.62,
+  "max_drawdown_pct": -6.10,
+  "trades_count": 47,
+  "notes": "AITraderStrategy with 8% sizing on AAPL.NASDAQ. RTH only. Bars: 1-min EXTERNAL. Slippage assumed at 1bp.",
+  "equity_curve": [
+    {"ts": "2025-10-01T13:30:00Z", "equity": 100000.00},
+    {"ts": "2025-10-15T20:00:00Z", "equity": 101240.00},
+    {"ts": "2025-10-31T20:00:00Z", "equity": 99820.00},
+    {"ts": "2025-11-14T20:00:00Z", "equity": 103950.00},
+    {"ts": "2025-11-28T20:00:00Z", "equity": 106200.00},
+    {"ts": "2025-12-15T20:00:00Z", "equity": 109340.00},
+    {"ts": "2025-12-31T20:00:00Z", "equity": 112480.50}
+  ],
+  "trades": [
+    {"ts": "2025-10-03T14:12:00Z", "instrument": "AAPL.NASDAQ", "side": "BUY",  "quantity": 35,  "price": 228.10, "pnl":  140.00},
+    {"ts": "2025-10-07T15:24:00Z", "instrument": "AAPL.NASDAQ", "side": "SELL", "quantity": 35,  "price": 232.10, "pnl":  140.00},
+    {"ts": "2025-10-18T14:55:00Z", "instrument": "AAPL.NASDAQ", "side": "BUY",  "quantity": 40,  "price": 235.50, "pnl": -180.00},
+    {"ts": "2025-10-24T19:35:00Z", "instrument": "AAPL.NASDAQ", "side": "SELL", "quantity": 40,  "price": 231.00, "pnl": -180.00},
+    {"ts": "2025-11-06T14:02:00Z", "instrument": "AAPL.NASDAQ", "side": "BUY",  "quantity": 42,  "price": 240.20, "pnl":  520.00},
+    {"ts": "2025-11-19T18:48:00Z", "instrument": "AAPL.NASDAQ", "side": "SELL", "quantity": 42,  "price": 252.60, "pnl":  520.00},
+    {"ts": "2025-12-04T15:11:00Z", "instrument": "AAPL.NASDAQ", "side": "BUY",  "quantity": 45,  "price": 256.40, "pnl":  690.00},
+    {"ts": "2025-12-19T19:14:00Z", "instrument": "AAPL.NASDAQ", "side": "SELL", "quantity": 45,  "price": 271.74, "pnl":  690.00}
+  ]
+}

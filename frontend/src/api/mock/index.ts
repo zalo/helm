@@ -60,6 +60,11 @@ export const mockApi = {
     payload: { message, source: "webui", demo: true },
   }),
   agentChat: async (_limit = 500) => ({ count: 0, messages: [] }),
+  backtests: async () => [],
+  backtest: async (_id: string) => { throw new Error("backtests unavailable in demo"); },
+  riskAnalyses: async () => [],
+  riskAnalysis: async (_id: string) => { throw new Error("risk unavailable in demo"); },
+  strategies: async () => [],
 
   // --- exotic feeds ---
   feedSources: () => getFeedSources(),

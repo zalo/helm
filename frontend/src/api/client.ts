@@ -9,6 +9,8 @@ import type {
   AgentChatMessage,
   AIDecision,
   AITraderStatus,
+  BacktestResult,
+  BacktestSummary,
   Bar,
   FeedItem,
   FeedSource,
@@ -18,6 +20,9 @@ import type {
   Order,
   PortfolioSnapshot,
   Position,
+  RiskAnalysisResult,
+  RiskAnalysisSummary,
+  StrategyInfo,
 } from "./types";
 import { mockApi } from "./mock";
 
@@ -82,6 +87,13 @@ const realApi = {
     request<{ count: number; messages: AgentChatMessage[] }>(
       `/agent/chat${qs({ limit })}`,
     ),
+
+  // --- Nautilus artifacts ---
+  backtests: () => request<BacktestSummary[]>("/agent/backtests"),
+  backtest: (id: string) => request<BacktestResult>(`/agent/backtests/${encodeURIComponent(id)}`),
+  riskAnalyses: () => request<RiskAnalysisSummary[]>("/agent/risk"),
+  riskAnalysis: (id: string) => request<RiskAnalysisResult>(`/agent/risk/${encodeURIComponent(id)}`),
+  strategies: () => request<StrategyInfo[]>("/agent/strategies"),
 
   // --- exotic feeds ---
   feedSources: () => request<FeedSource[]>("/feeds/sources"),

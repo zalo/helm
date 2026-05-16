@@ -20,9 +20,17 @@ import httpx
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from helm.artifacts import get_artifact, list_artifacts
 from helm.config import get_settings
 from helm.engine.manager import get_broadcaster, get_engine
-from helm.models import Order
+from helm.models import (
+    BacktestResult,
+    BacktestSummary,
+    Order,
+    RiskAnalysisResult,
+    RiskAnalysisSummary,
+    StrategyInfo,
+)
 
 log = logging.getLogger("helm.api.agent")
 
@@ -257,6 +265,77 @@ async def ack_message(message_id: str) -> dict[str, Any]:
         _pending.extend(kept)
         removed = before - len(_pending)
     return {"id": message_id, "acked": removed > 0, "remaining": len(kept)}
+
+
+# --- Nautilus artifacts: backtests + risk + strategies -----------------------
+
+
+@router.get("/backtests", response_model=list[BacktestSummary])
+async def list_backtests() -> list[BacktestSummary]:
+    """Every backtest result the engine knows about (live + seed)."""
+    return [BacktestSummary.model_validate(_drop_full(x))
+            for x in list_artifacts("backtests")]
+
+
+@router.get("/backtests/{artifact_id}", response_model=BacktestResult)
+async def get_backtest(artifact_id: str) -> BacktestResult:
+    data = get_artifact("backtests", artifact_id)
+    if data is None:
+        raise HTTPException(status_code=404, detail=f"backtest {artifact_id!r} not found")
+    return BacktestResult.model_validate(data)
+
+
+@router.get("/risk", response_model=list[RiskAnalysisSummary])
+async def list_risk() -> list[RiskAnalysisSummary]:
+    return [RiskAnalysisSummary.model_validate(_drop_full(x))
+            for x in list_artifacts("risk")]
+
+
+@router.get("/risk/{artifact_id}", response_model=RiskAnalysisResult)
+async def get_risk(artifact_id: str) -> RiskAnalysisResult:
+    data = get_artifact("risk", artifact_id)
+    if data is None:
+        raise HTTPException(status_code=404, detail=f"risk analysis {artifact_id!r} not found")
+    return RiskAnalysisResult.model_validate(data)
+
+
+def _drop_full(d: dict[str, Any]) -> dict[str, Any]:
+    """Strip large detail fields for list endpoints (keep summary lean)."""
+    out = dict(d)
+    for k in ("equity_curve", "trades", "exposures", "scenarios", "notes"):
+        out.pop(k, None)
+    return out
+
+
+@router.get("/strategies", response_model=list[StrategyInfo])
+async def list_strategies() -> list[StrategyInfo]:
+    """The trader strategies the running TradingNode has registered.
+
+    For now this is the AITraderStrategy (kept loaded as the order conduit) +
+    any backtest strategies known to ship with the repo. Extend as new live
+    strategies are added.
+    """
+    items: list[StrategyInfo] = [
+        StrategyInfo(
+            id="ai-trader",
+            name="AITraderStrategy",
+            kind="live",
+            description=("Nautilus Strategy that the helm-agent CLI submits "
+                         "orders through. The internal AIBrain timer is "
+                         "disabled by default; the external Claude Code "
+                         "operator drives decisions."),
+        ),
+        StrategyInfo(
+            id="backtest-ai-trader",
+            name="backtest_ai_trader.py",
+            kind="backtest",
+            description=("Sample backtest harness wrapping the same "
+                         "AITraderStrategy against historical parquet bars. "
+                         "Located at backend/scripts/backtest_ai_trader.py "
+                         "(per docs/AGENT_GUIDE.md §5)."),
+        ),
+    ]
+    return items
 
 
 class WakeRequest(BaseModel):
