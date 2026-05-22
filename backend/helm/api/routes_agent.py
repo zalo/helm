@@ -343,6 +343,31 @@ async def post_decision(req: DecisionRequest) -> AIDecision:
     return await get_engine().record_decision(decision)
 
 
+# --- Direct push-notify helper ---------------------------------------------
+#
+# Forwards a one-off message to the terminal-PWA notify endpoint at
+# HELM_NOTIFY_URL (default http://127.0.0.1:3000/api/notify). The event-driven
+# notifier (helm/notifications.py) already fans WS events; this is for ad-hoc
+# pushes from an agent — `helm-agent notify "Done with X"`.
+
+
+class NotifyRequest(BaseModel):
+    title: str = Field(..., min_length=1)
+    body: str | None = None
+    url: str | None = None
+    tag: str | None = None
+    icon: str | None = None
+    data: dict[str, Any] | None = None
+
+
+@router.post("/notify")
+async def notify(req: NotifyRequest) -> dict[str, Any]:
+    from helm.notifications import send_notification
+
+    payload = {k: v for k, v in req.model_dump().items() if v is not None}
+    return await send_notification(get_settings().notify_url, payload)
+
+
 # --- TradingView webhook receiver ------------------------------------------
 #
 # TradingView's alert form lets you set a webhook URL + a free-form body.

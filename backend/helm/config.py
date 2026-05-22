@@ -103,6 +103,19 @@ class Settings(BaseSettings):
     # refuses every request.
     tv_webhook_token: str | None = None
 
+    # Push notifications: the host runs a terminal PWA at :3000 that exposes
+    # POST /api/notify which fans payloads out to every subscribed phone.
+    # Helm forwards interesting WS events here.
+    notify_url: str = "http://127.0.0.1:3000/api/notify"
+    notify_enabled: bool = True
+    notify_events: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: ["order", "agent_message", "tv_alert", "wake"]
+    )
+
+    _normalize_notify_events = field_validator(
+        "notify_events", mode="before",
+    )(_parse_str_list)
+
     # --- HTTP / server ---
     cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: [

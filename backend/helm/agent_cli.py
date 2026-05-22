@@ -737,6 +737,22 @@ def cmd_risk_view(args: argparse.Namespace) -> None:
     })
 
 
+def cmd_notify(args: argparse.Namespace) -> None:
+    """Push an ad-hoc notification to every subscribed phone via the terminal
+    PWA's local notify endpoint (proxied through /api/agent/notify)."""
+    body = {"title": args.title}
+    if args.body:
+        body["body"] = args.body
+    if args.url:
+        body["url"] = args.url
+    if args.tag:
+        body["tag"] = args.tag
+    if args.icon:
+        body["icon"] = args.icon
+    data = _request("POST", "/api/agent/notify", json=body) or {}
+    _emit(data)
+
+
 def cmd_tv_alerts(args: argparse.Namespace) -> None:
     """Show recent TradingView webhook alerts received by helm."""
     data = _request("GET", f"/api/agent/tv-alerts?limit={args.limit}") or {}
@@ -1169,6 +1185,28 @@ def _build_parser() -> argparse.ArgumentParser:
                         help="recent TradingView webhook alerts received by helm")
     sp.add_argument("--limit", type=int, default=20)
     sp.set_defaults(fn=cmd_tv_alerts)
+    sp = sub.add_parser(
+        "notify",
+        help="push an ad-hoc notification to every subscribed phone",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "POSTs a {title, body, url, tag} payload to the terminal PWA's\n"
+            "local notify endpoint (HELM_NOTIFY_URL, default :3000). Use\n"
+            "stable --tag values so repeats collapse on the lock screen\n"
+            "instead of stacking.\n"
+            "\n"
+            "  helm-agent notify \"Build done\"\n"
+            "  helm-agent notify \"Order filled\" \"AAPL BUY 10 @ 305\" --tag order\n"
+        ),
+    )
+    sp.add_argument("title")
+    sp.add_argument("body", nargs="?", default=None)
+    sp.add_argument("--url", default=None,
+                    help="where the notification opens when tapped (default /)")
+    sp.add_argument("--tag", default=None,
+                    help="grouping key; same tag replaces an unopened notification")
+    sp.add_argument("--icon", default=None)
+    sp.set_defaults(fn=cmd_notify)
     sp = sub.add_parser(
         "say",
         help="post a message back to the webui chat panel",
