@@ -1,21 +1,21 @@
 {
   "id": "2026-05-15-eod",
-  "name": "End-of-day risk — 2026-05-15",
+  "name": "End-of-day risk — sample portfolio",
   "ts": "2026-05-15T20:30:00Z",
-  "portfolio_equity": 1009354.51,
+  "portfolio_equity": 1000000.00,
   "gross_exposure": 145000.00,
   "net_exposure": 145000.00,
   "var_95": -14250.00,
-  "notes": "Concentration in mega-cap NASDAQ tech. Crypto venues idle (no Binance creds).",
+  "notes": "Sample fixture — generic mega-cap NASDAQ tech concentration scenario for the Chart > Risk tab. Numbers are illustrative, not from any real account.",
   "exposures": [
-    {"instrument": "AAPL.NASDAQ", "quantity": 200, "market_value": 60050.00, "weight": 0.0595, "beta": 1.10},
-    {"instrument": "NVDA.NASDAQ", "quantity": 100, "market_value": 45200.00, "weight": 0.0448, "beta": 1.45},
-    {"instrument": "TSLA.NASDAQ", "quantity": 150, "market_value": 39750.00, "weight": 0.0394, "beta": 1.85}
+    {"instrument": "AAPL.NASDAQ", "quantity": 200, "market_value": 60050.00, "weight": 0.060, "beta": 1.10},
+    {"instrument": "NVDA.NASDAQ", "quantity": 100, "market_value": 45200.00, "weight": 0.045, "beta": 1.45},
+    {"instrument": "TSLA.NASDAQ", "quantity": 150, "market_value": 39750.00, "weight": 0.040, "beta": 1.85}
   ],
   "scenarios": [
-    {"name": "Fed surprise +25bp hike",     "pnl_pct": -2.40, "description": "Risk-off across mega-cap tech; NVDA leads down"},
-    {"name": "Soft CPI print",                "pnl_pct":  1.80, "description": "Rate-cut bid; growth names outperform"},
-    {"name": "China export-controls headline", "pnl_pct": -3.10, "description": "Semi names hit; NVDA -5% scenario"},
-    {"name": "TSLA delivery miss -8%",         "pnl_pct": -0.95, "description": "TSLA single-name shock"}
+    {"name": "Fed surprise +25bp hike",         "pnl_pct": -2.40, "description": "Risk-off across mega-cap tech; NVDA leads down"},
+    {"name": "Soft CPI print",                  "pnl_pct":  1.80, "description": "Rate-cut bid; growth names outperform"},
+    {"name": "China export-controls headline",  "pnl_pct": -3.10, "description": "Semi names hit; NVDA -5% scenario"},
+    {"name": "TSLA delivery miss -8%",          "pnl_pct": -0.95, "description": "TSLA single-name shock"}
   ]
 }
