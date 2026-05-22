@@ -2,11 +2,49 @@ import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { helmSocket } from "@/api/ws";
-import type { PortfolioSnapshot, Position, WsEvent } from "@/api/types";
+import type { Order, PortfolioSnapshot, Position, WsEvent } from "@/api/types";
 import type { WidgetProps } from "@/widgets/types";
 import { money, signedMoney, pct, num, pnlColor, arrow } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { Loading, ErrorState, Empty } from "./_shared";
+
+/** A terminal status means the order is done — out of the workings queue. */
+const TERMINAL_STATUSES = new Set(["FILLED", "CANCELED", "REJECTED", "EXPIRED"]);
+
+/** One row in the "Working Orders" list above the open positions. */
+function OrderRow({ o }: { o: Order }) {
+  const ticker = o.instrument.split(".")[0];
+  const buy = o.side === "BUY";
+  return (
+    <div className="flex items-center gap-2 rounded-md border border-warn/30 bg-warn/8 px-2.5 py-2">
+      <span
+        className={cn(
+          "chip rounded text-2xs font-semibold",
+          buy
+            ? "bg-gain/12 text-gain border border-gain/25"
+            : "bg-loss/12 text-loss border border-loss/25",
+        )}
+      >
+        {o.side}
+      </span>
+      <div className="flex min-w-0 flex-col leading-tight">
+        <span className="num text-xs font-semibold text-fg">{ticker}</span>
+        <span className="num text-2xs text-fg-faint">
+          {num(o.quantity, 0)} {o.type.toLowerCase()}
+          {o.price != null ? ` @ ${num(o.price, 2)}` : ""}
+        </span>
+      </div>
+      <span className="ml-auto flex flex-col items-end leading-tight">
+        <span className="chip rounded bg-warn/15 text-2xs font-semibold text-warn">
+          {o.status}
+        </span>
+        <span className="num text-2xs text-fg-faint">
+          {o.filled_qty > 0 ? `${num(o.filled_qty, 0)}/${num(o.quantity, 0)} filled` : "unfilled"}
+        </span>
+      </span>
+    </div>
+  );
+}
 
 function StatCard({
   label,
@@ -74,6 +112,13 @@ export default function PortfolioWidget(_props: WidgetProps) {
     queryFn: api.positions,
     refetchInterval: 30_000,
   });
+  // Working orders (anything not yet in a terminal state) — drawn ABOVE the
+  // positions list so the user sees pending intent before realized state.
+  const orders = useQuery({
+    queryKey: ["orders"],
+    queryFn: api.orders,
+    refetchInterval: 15_000,
+  });
 
   useEffect(() => {
     return helmSocket.on("portfolio", (e: WsEvent) => {
@@ -96,6 +141,20 @@ export default function PortfolioWidget(_props: WidgetProps) {
     });
   }, [qc]);
 
+  useEffect(() => {
+    return helmSocket.on("order", (e: WsEvent) => {
+      const ord = e.payload as Order;
+      qc.setQueryData<Order[]>(["orders"], (prev) => {
+        const list = prev ?? [];
+        const idx = list.findIndex((x) => x.id === ord.id);
+        if (idx === -1) return [ord, ...list];
+        const next = list.slice();
+        next[idx] = ord;
+        return next;
+      });
+    });
+  }, [qc]);
+
   if (isLoading) return <Loading />;
   if (isError)   return <ErrorState label="Portfolio unavailable" />;
   if (!data)     return <Empty />;
@@ -103,6 +162,11 @@ export default function PortfolioWidget(_props: WidgetProps) {
   const p = data;
   const openPositions =
     (positions.data ?? []).filter((x) => x.side !== "FLAT");
+  // Working orders sorted newest-first; gives the user the most recent
+  // submit at the top of the list.
+  const workingOrders = (orders.data ?? [])
+    .filter((o) => !TERMINAL_STATUSES.has(o.status))
+    .sort((a, b) => b.ts.localeCompare(a.ts));
 
   return (
     <div className="scroll-y panel-pad flex flex-col gap-2.5">
@@ -157,6 +221,21 @@ export default function PortfolioWidget(_props: WidgetProps) {
           className="text-fg-muted"
         />
       </div>
+
+      {/* Working orders — drawn ABOVE open positions so pending intent is
+          visible before realized state. Terminal statuses (FILLED, CANCELED,
+          REJECTED, EXPIRED) are filtered out — those live in the dedicated
+          Orders pane.  */}
+      {workingOrders.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <span className="px-0.5 pb-0.5 text-2xs font-semibold uppercase tracking-wider text-fg-faint">
+            Working Orders <span className="text-warn">({workingOrders.length})</span>
+          </span>
+          <div className="flex flex-col gap-1">
+            {workingOrders.map((o) => <OrderRow key={o.id} o={o} />)}
+          </div>
+        </div>
+      )}
 
       {/* Open positions glance-board — fills mobile dead space, adds value on desktop */}
       {openPositions.length > 0 && (

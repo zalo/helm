@@ -530,20 +530,25 @@ class NautilusEngine(BaseEngine):
         # the real cost-basis denominator now so percentages reflect actual moves.
         total_pnl_pct = round((total_pnl / start) * 100.0, 4) if start else 0.0
 
-        # Equity-curve dedup: lightweight-charts requires strictly increasing
-        # timestamps at second resolution. Replace the trailing point if it
-        # falls in the same wall-second instead of appending a duplicate.
-        new_point = EquityPoint(ts=now, equity=round(equity, 2))
-        if (
-            self._equity_curve
-            and int(self._equity_curve[-1].ts.timestamp())
-            == int(new_point.ts.timestamp())
-        ):
-            self._equity_curve[-1] = new_point
-        else:
-            self._equity_curve.append(new_point)
-        if len(self._equity_curve) > 2000:
-            self._equity_curve = self._equity_curve[-2000:]
+        # Only seed the equity curve once the IB account has reconciled.
+        # Before that, the fallback `equity = HELM_STARTING_EQUITY + 0 + 0`
+        # produced a fake $100k anchor point that visually dominated the P&L
+        # chart for the rest of the session.
+        if accounts:
+            # Lightweight-charts requires strictly increasing timestamps at
+            # second resolution — replace the trailing point if it falls in
+            # the same wall-second instead of appending a duplicate.
+            new_point = EquityPoint(ts=now, equity=round(equity, 2))
+            if (
+                self._equity_curve
+                and int(self._equity_curve[-1].ts.timestamp())
+                == int(new_point.ts.timestamp())
+            ):
+                self._equity_curve[-1] = new_point
+            else:
+                self._equity_curve.append(new_point)
+            if len(self._equity_curve) > 2000:
+                self._equity_curve = self._equity_curve[-2000:]
 
         return PortfolioSnapshot(
             ts=now,
