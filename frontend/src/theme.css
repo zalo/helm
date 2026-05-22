@@ -168,4 +168,31 @@ body::after {
   .nav-row-active {
     @apply bg-bg-2 text-fg;
   }
+
+  /* Markdown rendering inside chat bubbles (.md-message wraps a
+     ReactMarkdown root). Keeps the bubble compact but readable. */
+  .md-message > * + * { @apply mt-1.5; }
+  .md-message p           { @apply leading-relaxed; }
+  .md-message strong      { @apply font-semibold text-fg; }
+  .md-message em          { @apply italic; }
+  .md-message code        { @apply rounded bg-bg-3 px-1 py-0.5 text-[10.5px] font-mono text-fg; }
+  .md-message pre         { @apply my-1 overflow-x-auto rounded-md bg-bg-3 p-2 text-[11px] font-mono; }
+  .md-message pre code    { @apply bg-transparent p-0; }
+  .md-message ul          { @apply list-disc pl-5 space-y-0.5; }
+  .md-message ol          { @apply list-decimal pl-5 space-y-0.5; }
+  .md-message li > p      { @apply m-0; }
+  .md-message a           { @apply text-accent underline; }
+  .md-message blockquote  { @apply border-l-2 border-border pl-2 italic text-fg-muted; }
+  .md-message h1, .md-message h2, .md-message h3 {
+    @apply mt-2 mb-0.5 font-semibold text-fg;
+  }
+  .md-message h1          { @apply text-sm; }
+  .md-message h2          { @apply text-xs; }
+  .md-message h3          { @apply text-xs uppercase tracking-wide text-fg-muted; }
+  .md-message hr          { @apply my-2 border-border; }
+  .md-message table       { @apply my-1 w-full border-collapse text-[11px]; }
+  .md-message th, .md-message td {
+    @apply border border-border px-1.5 py-0.5;
+  }
+  .md-message th          { @apply bg-bg-3 font-semibold; }
 }

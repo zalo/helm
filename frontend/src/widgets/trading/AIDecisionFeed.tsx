@@ -4,6 +4,8 @@ import {
   BrainCircuit, ChevronDown, ChevronRight, Pause, Play, Circle,
   MessageSquare, Send, User2,
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { api } from "@/api/client";
 import { helmSocket } from "@/api/ws";
 import type {
@@ -393,7 +395,9 @@ function ChatPanel() {
                   )}
                   <span className="ml-auto">{relativeTime(m.ts)}</span>
                 </div>
-                <div className="whitespace-pre-wrap text-xs leading-relaxed">{m.message}</div>
+                <div className="md-message text-xs leading-relaxed">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.message}</ReactMarkdown>
+                </div>
               </div>
             ))}
             {agentBusy && (

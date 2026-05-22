@@ -33,19 +33,80 @@ import { Empty, ErrorState, Loading } from "./_shared";
 
 type ChartTab = "bars" | "backtests" | "risk";
 
+/** Bar aggregation in MINUTES. 1d = ~390 mins of RTH so client-side aggregation
+ *  is fine through 1h; longer requires day-level history (OpenBB pass-through). */
+const TIMEFRAMES = [
+  { id: "1m",  label: "1m",  mins: 1 },
+  { id: "5m",  label: "5m",  mins: 5 },
+  { id: "15m", label: "15m", mins: 15 },
+  { id: "1h",  label: "1h",  mins: 60 },
+] as const;
+type Timeframe = (typeof TIMEFRAMES)[number]["id"];
+
+/** Trailing-window size in BARS (after aggregation). */
+const PERIODS = [
+  { id: "100", label: "100", n: 100 },
+  { id: "300", label: "300", n: 300 },
+  { id: "all", label: "All", n: Infinity },
+] as const;
+type Period = (typeof PERIODS)[number]["id"];
+
 export interface ChartConfig {
   instrument?: string;
   tab?: ChartTab;
   backtestId?: string;
   riskId?: string;
+  timeframe?: Timeframe;
+  period?: Period;
+  showVolume?: boolean;
+  showSma?: boolean;
+  showCostLine?: boolean;
   [key: string]: unknown;
+}
+
+/** Aggregate 1-min OHLCV bars into ``minsPerBar``-minute bars. */
+function aggregateBars(bars: Bar[], minsPerBar: number): Bar[] {
+  if (minsPerBar <= 1 || bars.length === 0) return bars;
+  const bucketMs = minsPerBar * 60_000;
+  const out: Bar[] = [];
+  let cur: Bar | null = null;
+  let curBucket = -1;
+  for (const b of bars) {
+    const bucket = Math.floor(new Date(b.ts).getTime() / bucketMs);
+    if (bucket !== curBucket) {
+      if (cur) out.push(cur);
+      cur = { ...b, ts: new Date(bucket * bucketMs).toISOString() };
+      curBucket = bucket;
+    } else if (cur) {
+      cur.high = Math.max(cur.high, b.high);
+      cur.low  = Math.min(cur.low,  b.low);
+      cur.close = b.close;
+      cur.volume += b.volume;
+    }
+  }
+  if (cur) out.push(cur);
+  return out;
 }
 
 // ============================================================================
 // Bars tab — pre-existing live chart
 // ============================================================================
 
-function BarsTab({ active }: { active: string }) {
+function BarsTab({
+  active,
+  timeframe, setTimeframe,
+  period, setPeriod,
+  showVolume, setShowVolume,
+  showSma, setShowSma,
+  showCostLine, setShowCostLine,
+}: {
+  active: string;
+  timeframe: Timeframe;     setTimeframe: (t: Timeframe) => void;
+  period: Period;           setPeriod: (p: Period) => void;
+  showVolume: boolean;      setShowVolume: (v: boolean) => void;
+  showSma: boolean;         setShowSma: (v: boolean) => void;
+  showCostLine: boolean;    setShowCostLine: (v: boolean) => void;
+}) {
   const bars = useQuery({
     queryKey: ["bars", active],
     queryFn: () => api.bars(active),
@@ -96,39 +157,48 @@ function BarsTab({ active }: { active: string }) {
   useEffect(() => {
     const candle = candleRef.current; const vol = volRef.current;
     if (!candle || !vol || !bars.data) return;
-    const candleData: CandlestickData[] = bars.data.map((b) => ({
+
+    // 1. Aggregate raw 1-min bars into the chosen timeframe.
+    const tfMins = TIMEFRAMES.find((t) => t.id === timeframe)?.mins ?? 1;
+    const agg = aggregateBars(bars.data, tfMins);
+
+    // 2. Trim to the chosen trailing-window size (in aggregated bars).
+    const pCfg = PERIODS.find((p) => p.id === period) ?? PERIODS[1];
+    const trimmed = pCfg.n === Infinity ? agg : agg.slice(-pCfg.n);
+
+    const candleData: CandlestickData[] = trimmed.map((b) => ({
       time: tsToSec(b.ts) as UTCTimestamp,
       open: b.open, high: b.high, low: b.low, close: b.close,
     }));
-    const volData: HistogramData[] = bars.data.map((b) => ({
+    const volData: HistogramData[] = trimmed.map((b) => ({
       time: tsToSec(b.ts) as UTCTimestamp,
       value: b.volume,
       color: b.close >= b.open ? "rgba(63,185,80,0.35)" : "rgba(248,81,73,0.35)",
     }));
     candle.setData(candleData);
-    vol.setData(volData);
+    vol.setData(showVolume ? volData : []);
     chartRef.current?.timeScale().fitContent();
 
-    // SMA(20) overlay — built once per dataset refresh, cleared first.
+    // SMA(20) overlay — rebuilt each draw; trimmed first.
     const chart = chartRef.current;
     if (chart) {
       if (smaRef.current) {
         try { chart.removeSeries(smaRef.current); } catch { /* ignore */ }
         smaRef.current = null;
       }
-      if (bars.data.length >= 20) {
+      if (showSma && trimmed.length >= 20) {
         const sma = chart.addLineSeries({
           color: "#f0a020", lineWidth: 1, priceLineVisible: false,
           lastValueVisible: false, crosshairMarkerVisible: false,
         });
         const smaData: LineData[] = [];
         let window = 0;
-        for (let i = 0; i < bars.data.length; i++) {
-          window += bars.data[i].close;
-          if (i >= 20) window -= bars.data[i - 20].close;
+        for (let i = 0; i < trimmed.length; i++) {
+          window += trimmed[i].close;
+          if (i >= 20) window -= trimmed[i - 20].close;
           if (i >= 19) {
             smaData.push({
-              time: tsToSec(bars.data[i].ts) as UTCTimestamp,
+              time: tsToSec(trimmed[i].ts) as UTCTimestamp,
               value: window / 20,
             });
           }
@@ -137,7 +207,7 @@ function BarsTab({ active }: { active: string }) {
         smaRef.current = sma;
       }
     }
-  }, [bars.data]);
+  }, [bars.data, timeframe, period, showVolume, showSma]);
 
   // Avg-cost price line for the open position on `active`, if any. Re-runs
   // whenever positions or active change. Multiple lots in the future would
@@ -151,6 +221,7 @@ function BarsTab({ active }: { active: string }) {
       }).removePriceLine(pl); } catch { /* already removed */ }
     }
     priceLinesRef.current = [];
+    if (!showCostLine) return;
     const pos = (positions.data ?? []).find(
       (p) => p.instrument === active && p.side !== "FLAT",
     );
@@ -164,7 +235,7 @@ function BarsTab({ active }: { active: string }) {
       title: `avg ${pos.side[0]}${pos.quantity}`,
     });
     priceLinesRef.current.push(line);
-  }, [active, positions.data]);
+  }, [active, positions.data, showCostLine]);
 
   useEffect(() => {
     if (!active) return;
@@ -185,13 +256,78 @@ function BarsTab({ active }: { active: string }) {
   const empty = !loading && !error && (!active || bars.data?.length === 0);
 
   return (
-    <div className="relative h-full">
-      {loading && <Loading />}
-      {error && <ErrorState label="Chart data unavailable" />}
-      {empty && <Empty label="No bars for this instrument" />}
-      <div ref={hostRef}
-        className={cn("absolute inset-0", (loading || error || empty) && "invisible")} />
+    <div className="flex h-full flex-col">
+      {/* Chart toolbar: timeframe / period / toggles. Persists via ChartConfig. */}
+      <div className="flex flex-shrink-0 flex-wrap items-center gap-1 border-b border-border bg-bg-1 px-2 py-1 text-2xs">
+        <SegGroup
+          label="TF" value={timeframe} onChange={setTimeframe as (v: string) => void}
+          opts={TIMEFRAMES.map((t) => ({ id: t.id, label: t.label }))}
+        />
+        <SegGroup
+          label="N" value={period} onChange={setPeriod as (v: string) => void}
+          opts={PERIODS.map((p) => ({ id: p.id, label: p.label }))}
+        />
+        <div className="ml-auto flex items-center gap-1">
+          <Toggle label="Vol"  on={showVolume}   onChange={setShowVolume}   />
+          <Toggle label="SMA"  on={showSma}      onChange={setShowSma}      />
+          <Toggle label="Cost" on={showCostLine} onChange={setShowCostLine} />
+        </div>
+      </div>
+      <div className="relative flex-1">
+        {loading && <Loading />}
+        {error && <ErrorState label="Chart data unavailable" />}
+        {empty && <Empty label="No bars for this instrument" />}
+        <div ref={hostRef}
+          className={cn("absolute inset-0", (loading || error || empty) && "invisible")} />
+      </div>
     </div>
+  );
+}
+
+function SegGroup({
+  label, value, onChange, opts,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  opts: { id: string; label: string }[];
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-fg-faint">{label}</span>
+      <div className="flex overflow-hidden rounded-md border border-border bg-bg-2">
+        {opts.map((o, i) => (
+          <button key={o.id} type="button" onClick={() => onChange(o.id)}
+            className={cn(
+              "px-1.5 py-0.5 font-medium transition-colors",
+              i > 0 && "border-l border-border",
+              value === o.id ? "bg-accent/15 text-fg" : "text-fg-muted hover:text-fg",
+            )}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Toggle({
+  label, on, onChange,
+}: {
+  label: string;
+  on: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <button type="button" onClick={() => onChange(!on)}
+      className={cn(
+        "rounded-md border px-1.5 py-0.5 font-medium transition-colors",
+        on
+          ? "border-accent/40 bg-accent/15 text-fg"
+          : "border-border bg-bg-2 text-fg-muted hover:text-fg",
+      )}>
+      {label}
+    </button>
   );
 }
 
@@ -436,6 +572,14 @@ export default function ChartWidget({ config, setConfig }: WidgetProps<ChartConf
   const setBacktest = (id: string | null) => setConfig({ backtestId: id ?? undefined });
   const setRisk = (id: string | null) => setConfig({ riskId: id ?? undefined });
 
+  // Chart toolbar state — defaults give the previous behaviour exactly:
+  //   1m bars, last 300, volume + SMA + cost-line all on.
+  const timeframe: Timeframe = (config.timeframe as Timeframe) ?? "1m";
+  const period:    Period    = (config.period    as Period)    ?? "300";
+  const showVolume   = config.showVolume   ?? true;
+  const showSma      = config.showSma      ?? true;
+  const showCostLine = config.showCostLine ?? true;
+
   return (
     <div className="flex h-full w-full flex-col">
       {/* Tabs */}
@@ -479,7 +623,16 @@ export default function ChartWidget({ config, setConfig }: WidgetProps<ChartConf
       </div>
 
       <div className="min-h-0 flex-1">
-        {tab === "bars" && <BarsTab active={active} />}
+        {tab === "bars" && (
+          <BarsTab
+            active={active}
+            timeframe={timeframe}     setTimeframe={(t) => setConfig({ timeframe: t })}
+            period={period}           setPeriod={(p) => setConfig({ period: p })}
+            showVolume={showVolume}   setShowVolume={(v) => setConfig({ showVolume: v })}
+            showSma={showSma}         setShowSma={(v) => setConfig({ showSma: v })}
+            showCostLine={showCostLine} setShowCostLine={(v) => setConfig({ showCostLine: v })}
+          />
+        )}
         {tab === "backtests" && (
           <BacktestsTab selectedId={config.backtestId ?? null} onSelect={setBacktest} />
         )}
