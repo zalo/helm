@@ -161,6 +161,16 @@ def cmd_status(_: argparse.Namespace) -> None:
     orders = _request("GET", "/api/trading/orders") or []
     instruments = _request("GET", "/api/trading/instruments") or []
     decisions = _request("GET", "/api/ai/decisions?limit=5") or []
+    pending = _request("GET", "/api/agent/pending") or {}
+
+    # Active OpenBB probe — health flag only checks the local import.
+    openbb_url = os.environ.get("HELM_OPENBB_URL", "http://localhost:6900")
+    openbb_reachable = False
+    try:
+        with httpx.Client(timeout=2.0) as c:
+            openbb_reachable = c.get(openbb_url + "/openapi.json").status_code == 200
+    except Exception:
+        openbb_reachable = False
 
     bin_path = shutil.which("helm-agent") or sys.argv[0]
     home = str(Path.home())
@@ -170,11 +180,13 @@ def cmd_status(_: argparse.Namespace) -> None:
         "bin": bin_path,
         "description": DESC,
         "api": DEFAULT_BASE,
+        "pending_wakes": pending.get("count", 0),
         "engine": {
             "mode": health.get("mode"),
             "running": health.get("engine_running"),
             "nautilus": health.get("nautilus_available"),
-            "openbb": health.get("openbb_available"),
+            "openbb_lib": health.get("openbb_available"),
+            "openbb_reachable": openbb_reachable,
             "version": health.get("version"),
         },
         "ai_trader": {
@@ -379,14 +391,115 @@ def cmd_close(args: argparse.Namespace) -> None:
                "note": "no open position to close (no-op)"})
 
 
+def cmd_close_all(args: argparse.Namespace) -> None:
+    """Flatten every open position. Pass --exclude id,id to keep some."""
+    excluded = set((args.exclude or "").split(",")) if args.exclude else set()
+    excluded.discard("")
+    positions = _request("GET", "/api/trading/positions") or []
+    targets = [p["instrument"] for p in positions if p["instrument"] not in excluded]
+    if not targets:
+        _emit({"closed": [], "note": "no open positions" if not positions else "all excluded"})
+        return
+    results = []
+    for instr in targets:
+        data = _request("POST", f"/api/agent/close/{instr}") or {}
+        results.append({"instrument": instr, "closed": bool(data.get("closed")),
+                        "order_id": (data.get("order") or {}).get("id")})
+    _emit({"requested": len(targets), "closed": results,
+           "skipped": sorted(excluded) if excluded else None})
+
+
+def cmd_wait_fill(args: argparse.Namespace) -> None:
+    """Block on /ws until ``order_id`` reaches a terminal state (or timeout)."""
+    asyncio.run(_wait_fill_async(args))
+
+
+_TERMINAL_STATUSES = {"FILLED", "CANCELED", "REJECTED", "EXPIRED"}
+
+
+async def _wait_fill_async(args: argparse.Namespace) -> None:
+    import websockets
+
+    target = args.order_id
+    deadline = asyncio.get_event_loop().time() + float(args.timeout)
+    url = WS_BASE + "/ws"
+
+    # 1) Snapshot via REST first — order may already be terminal.
+    orders = _request("GET", "/api/trading/orders") or []
+    for o in orders:
+        if o.get("id") == target and (o.get("status") or "") in _TERMINAL_STATUSES:
+            _emit({"order_id": target, "status": o["status"],
+                   "filled_qty": o.get("filled_qty"), "avg_px": o.get("avg_px"),
+                   "source": "snapshot"})
+            return
+
+    # 2) Otherwise subscribe and wait.
+    async def _loop():
+        async with websockets.connect(url) as ws:
+            while True:
+                raw = await ws.recv()
+                try:
+                    msg = json.loads(raw)
+                except Exception:
+                    continue
+                if msg.get("type") != "order":
+                    continue
+                p = msg.get("payload") or {}
+                if p.get("id") != target:
+                    continue
+                if (p.get("status") or "") in _TERMINAL_STATUSES:
+                    return {"order_id": target, "status": p["status"],
+                            "filled_qty": p.get("filled_qty"), "avg_px": p.get("avg_px"),
+                            "source": "ws"}
+
+    try:
+        result = await asyncio.wait_for(
+            _loop(), timeout=max(0.0, deadline - asyncio.get_event_loop().time()),
+        )
+    except asyncio.TimeoutError:
+        # On timeout, fall back to one more REST snapshot.
+        orders = _request("GET", "/api/trading/orders") or []
+        for o in orders:
+            if o.get("id") == target:
+                _emit({"order_id": target, "status": o.get("status"),
+                       "filled_qty": o.get("filled_qty"), "avg_px": o.get("avg_px"),
+                       "timeout": True, "source": "snapshot-after-timeout"})
+                return
+        _emit({"order_id": target, "timeout": True, "found": False})
+        return
+    _emit(result)
+
+
 def cmd_say(args: argparse.Namespace) -> None:
-    """Post a message back to the webui chat panel."""
-    body = {"message": args.message, "role": args.role}
+    """Post a message back to the webui chat panel.
+
+    The message body is taken from:
+      * stdin if ``message == "-"``  (e.g. ``some-cmd | helm-agent say -``)
+      * the file at ``path`` if ``message == "@path"``
+      * the literal ``message`` otherwise
+
+    The stdin/file paths sidestep shell quoting on long markdown replies,
+    which was the dominant friction point in agent-driven flows.
+    """
+    msg = args.message
+    if msg == "-":
+        msg = sys.stdin.read()
+    elif msg.startswith("@"):
+        try:
+            msg = Path(msg[1:]).read_text()
+        except OSError as e:
+            _emit({"error": f"could not read {msg[1:]!r}", "detail": str(e)})
+            sys.exit(2)
+    if not msg.strip():
+        _emit({"error": "empty message", "help": 'pass text, "-" for stdin, or "@path" for a file'})
+        sys.exit(2)
+    body = {"message": msg, "role": args.role}
     data = _request("POST", "/api/agent/say", json=body) or {}
     _emit(
         {"posted": bool(data.get("posted")),
          "ts": (data.get("payload") or {}).get("ts"),
-         "acked_wake_id": data.get("acked_wake_id")},
+         "acked_wake_id": data.get("acked_wake_id"),
+         "chars": len(msg)},
         suggestions=[
             "helm-agent sleep --on-event wake       # RE-ARM so the next webui msg can fire",
         ],
@@ -778,6 +891,27 @@ def _build_parser() -> argparse.ArgumentParser:
     sp.add_argument("order_id"); sp.set_defaults(fn=cmd_cancel)
     sp = sub.add_parser("close", help="flatten the open position on one instrument")
     sp.add_argument("instrument"); sp.set_defaults(fn=cmd_close)
+    sp = sub.add_parser("close-all", help="flatten every open position")
+    sp.add_argument("--exclude", default=None,
+                    help="comma-separated instrument ids to keep open")
+    sp.set_defaults(fn=cmd_close_all)
+    sp = sub.add_parser(
+        "wait-fill",
+        help="block until an order reaches a terminal state",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Block on /ws until the given order id reaches FILLED, CANCELED,\n"
+            "REJECTED, or EXPIRED. Useful after submit/close to chain decisions\n"
+            "on the actual fill, not just the submit acknowledgement.\n"
+            "\n"
+            "    helm-agent submit AAPL.NASDAQ BUY 1 --json | jq -r .data.submitted.id \\\n"
+            "      | xargs helm-agent wait-fill\n"
+        ),
+    )
+    sp.add_argument("order_id")
+    sp.add_argument("--timeout", type=float, default=300.0,
+                    help="seconds to wait before giving up (default 300)")
+    sp.set_defaults(fn=cmd_wait_fill)
     sp = sub.add_parser("add-instrument", help="add a ticker to HELM_INSTRUMENTS")
     sp.add_argument("instrument")
     sp.add_argument("--restart", action="store_true", help="re-exec uvicorn after adding")
@@ -809,9 +943,14 @@ def _build_parser() -> argparse.ArgumentParser:
             "wake on the server. After say, RE-ARM with:\n"
             "\n"
             "    helm-agent sleep --on-event wake\n"
+            "\n"
+            "MESSAGE accepts three forms — the last two sidestep shell quoting:\n"
+            "  helm-agent say \"hello world\"          # literal\n"
+            "  helm-agent say @/tmp/reply.md          # read from a file\n"
+            "  cat reply.md | helm-agent say -        # read from stdin\n"
         ),
     )
-    sp.add_argument("message")
+    sp.add_argument("message", help='literal text, "@path" file, or "-" for stdin')
     sp.add_argument("--role", default="agent")
     sp.set_defaults(fn=cmd_say)
     sub.add_parser("pause", help="pause the in-engine AI trader").set_defaults(fn=cmd_pause)

@@ -732,7 +732,10 @@ class NautilusEngine(BaseEngine):
         return Order(
             id=str(position.id),
             instrument=instrument,
-            side="SELL" if str(position.side) == "LONG" else "BUY",
+            # Nautilus PositionSide is an IntEnum — str() yields its numeric
+            # value ("2"/"3"), not the symbolic name. Use _enum_name() so the
+            # synthetic ack actually reflects the close direction.
+            side="SELL" if "LONG" in _enum_name(position.side) else "BUY",
             type="MARKET",
             status="SUBMITTED",
             quantity=float(position.quantity),
