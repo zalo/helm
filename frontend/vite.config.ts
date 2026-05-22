@@ -13,8 +13,9 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
-    // `.trycloudflare.com` for Cloudflare quick-tunnels; `.ts.net` for Tailscale MagicDNS.
-    allowedHosts: [".trycloudflare.com", ".ts.net"],
+    // `.trycloudflare.com` for Cloudflare quick-tunnels; `.ts.net` for Tailscale
+    // MagicDNS; `.sels.tech` for the persistent cloudflared tunnel (helm.sels.tech).
+    allowedHosts: [".trycloudflare.com", ".ts.net", ".sels.tech"],
     proxy: {
       "/api": { target: "http://localhost:8000", changeOrigin: true },
       "/ws": { target: "ws://localhost:8000", ws: true },
