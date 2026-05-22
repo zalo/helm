@@ -97,6 +97,12 @@ class Settings(BaseSettings):
     openbb_api_url: str | None = None  # e.g. http://localhost:6900
     openbb_pat: str | None = None
 
+    # Shared secret for the TradingView webhook receiver. POSTs to
+    # /api/agent/tv-alert must carry ?token=<this> (TV doesn't allow custom
+    # headers, so we accept the token in the query string). Unset = endpoint
+    # refuses every request.
+    tv_webhook_token: str | None = None
+
     # --- HTTP / server ---
     cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: [

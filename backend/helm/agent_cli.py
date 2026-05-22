@@ -737,6 +737,30 @@ def cmd_risk_view(args: argparse.Namespace) -> None:
     })
 
 
+def cmd_tv_alerts(args: argparse.Namespace) -> None:
+    """Show recent TradingView webhook alerts received by helm."""
+    data = _request("GET", f"/api/agent/tv-alerts?limit={args.limit}") or {}
+    items = data.get("alerts") or []
+    if not items:
+        _emit({"alerts_count": 0,
+               "note": "no TradingView alerts received yet — wire one up in TV via "
+                       "Alert form → Webhook URL"},
+              suggestions=[
+                  "helm-agent sleep --on-event tv_alert    # block until next TV alert",
+              ])
+        return
+    rows = [{
+        "ts": (a.get("ts") or "")[:19],
+        "id": a.get("id"),
+        "symbol": a.get("symbol") or a.get("ticker"),
+        "side": a.get("side") or a.get("action"),
+        "value": a.get("value") or a.get("close"),
+        "msg": _trunc(a.get("text") or a.get("message") or "", 80)["value"],
+    } for a in items]
+    _emit({"alerts_count": len(rows), "alerts": rows},
+          suggestions=["helm-agent sleep --on-event tv_alert    # wait for the next one"])
+
+
 def cmd_strategies(_: argparse.Namespace) -> None:
     data = _request("GET", "/api/agent/strategies") or []
     rows = [{"id": s["id"], "name": s["name"], "kind": s["kind"],
@@ -1141,6 +1165,10 @@ def _build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("risk-view", help="view one risk analysis (exposures + scenarios)")
     sp.add_argument("id"); sp.set_defaults(fn=cmd_risk_view)
     sub.add_parser("strategies", help="list Nautilus strategies the engine knows about").set_defaults(fn=cmd_strategies)
+    sp = sub.add_parser("tv-alerts",
+                        help="recent TradingView webhook alerts received by helm")
+    sp.add_argument("--limit", type=int, default=20)
+    sp.set_defaults(fn=cmd_tv_alerts)
     sp = sub.add_parser(
         "say",
         help="post a message back to the webui chat panel",

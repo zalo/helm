@@ -17,7 +17,7 @@ from typing import Any
 from datetime import datetime, timezone
 
 import httpx
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from helm.artifacts import get_artifact, list_artifacts
@@ -341,6 +341,63 @@ async def post_decision(req: DecisionRequest) -> AIDecision:
         status=req.status,
     )
     return await get_engine().record_decision(decision)
+
+
+# --- TradingView webhook receiver ------------------------------------------
+#
+# TradingView's alert form lets you set a webhook URL + a free-form body.
+# When the alert fires (e.g. a paid Pine indicator going long), TV POSTs the
+# body to that URL. The body can include placeholders like {{ticker}},
+# {{close}}, {{plot_0}} that TV substitutes at fire time. We accept either:
+#
+#   * Valid JSON body  → parsed directly (preferred shape: at least
+#       {symbol, side?, message?, value?})
+#   * Anything else    → stored under {"text": "<raw body>"}
+#
+# Auth: the URL must carry ?token=<HELM_TV_WEBHOOK_TOKEN> since TV doesn't
+# let you set custom headers. The shared secret is configured via env.
+
+_tv_alerts: deque[dict[str, Any]] = deque(maxlen=200)
+_tv_lock = threading.Lock()
+
+
+@router.post("/tv-alert")
+async def tv_alert(req: Request, token: str | None = Query(default=None)) -> dict[str, Any]:
+    expected = get_settings().tv_webhook_token
+    if not expected:
+        raise HTTPException(
+            status_code=503,
+            detail="HELM_TV_WEBHOOK_TOKEN not configured on the server",
+        )
+    if not token or token != expected:
+        raise HTTPException(status_code=401, detail="bad or missing ?token")
+
+    raw = (await req.body()).decode(errors="replace").strip()
+    body: dict[str, Any]
+    try:
+        body = json.loads(raw) if raw else {}
+        if not isinstance(body, dict):
+            body = {"value": body}
+    except Exception:
+        body = {"text": raw}
+
+    entry: dict[str, Any] = {
+        "id": uuid.uuid4().hex[:12],
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "source_ip": req.client.host if req.client else None,
+        **body,
+    }
+    with _tv_lock:
+        _tv_alerts.append(entry)
+    await get_broadcaster().publish("tv_alert", entry)
+    return {"received": True, "id": entry["id"]}
+
+
+@router.get("/tv-alerts")
+async def list_tv_alerts(limit: int = Query(50, ge=1, le=200)) -> dict[str, Any]:
+    with _tv_lock:
+        items = list(_tv_alerts)[-limit:]
+    return {"count": len(items), "alerts": items}
 
 
 @router.get("/strategies", response_model=list[StrategyInfo])

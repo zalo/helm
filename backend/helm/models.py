@@ -274,6 +274,7 @@ WsEventType = Literal[
     "log",
     "wake",
     "agent_message",
+    "tv_alert",
 ]
 
 
