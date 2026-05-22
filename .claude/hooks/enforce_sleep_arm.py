@@ -20,11 +20,13 @@ Stop hook contract (per Claude Code docs):
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 from pathlib import Path
 
 ARMED = re.compile(r"\bhelm-agent\b.*\bsleep\b.*--on-event\b.*\bwake\b")
+_SLEEP_PID_FILE = Path.home() / ".cache" / "helm-agent" / "sleep.pid"
 
 
 def _read_payload() -> dict:
@@ -32,6 +34,23 @@ def _read_payload() -> dict:
         return json.loads(sys.stdin.read() or "{}")
     except Exception:
         return {}
+
+
+def _live_sleep_pid() -> int | None:
+    """If a `helm-agent sleep` subscriber is alive (per its PID file), return its PID."""
+    try:
+        raw = _SLEEP_PID_FILE.read_text().strip()
+    except OSError:
+        return None
+    try:
+        pid = int(raw)
+    except ValueError:
+        return None
+    try:
+        os.kill(pid, 0)  # signal 0 = liveness probe
+    except OSError:
+        return None
+    return pid
 
 
 def _last_bash_command(transcript_path: str) -> str | None:
@@ -61,11 +80,22 @@ def _last_bash_command(transcript_path: str) -> str | None:
 
 
 def main() -> int:
+    # 1) Already-armed shortcut: if a live `helm-agent sleep` subscriber exists,
+    # there's no need to require a fresh re-arm — the agent IS parked. This
+    # breaks the dedup-short-circuit feedback loop where every Stop hook used
+    # to force a redundant `helm-agent sleep` call.
+    if _live_sleep_pid() is not None:
+        return 0
+
+    # 2) Fallback: scan the transcript for an end-of-turn arm call. Covers the
+    # case where the PID file hasn't been written yet (rare race) or the
+    # subscriber crashed without cleanup.
     payload = _read_payload()
     transcript = payload.get("transcript_path") or ""
     last = _last_bash_command(transcript) or ""
     if ARMED.search(last):
         return 0
+
     sys.stderr.write(
         "TURN-END GUARD: end every turn by re-arming the helm-agent CLI so "
         "the next wake event can fire. Run this now and wait on it:\n\n"
