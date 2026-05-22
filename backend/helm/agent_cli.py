@@ -549,6 +549,36 @@ def cmd_pending(_: argparse.Namespace) -> None:
     _emit(data)
 
 
+def cmd_decide(args: argparse.Namespace) -> None:
+    """Push an AIDecision into the Decisions tab.
+
+    Use this whenever the agent makes a trading judgement worth recording —
+    even a HOLD. It is the canonical way to populate the Decisions feed
+    while the in-process AIBrain timer is disabled.
+    """
+    body: dict[str, Any] = {
+        "action": args.action.upper(),
+        "confidence": args.conf,
+        "thesis": args.thesis,
+        "status": args.status,
+    }
+    if args.instrument:
+        body["instrument"] = args.instrument
+    if args.reasoning:
+        if args.reasoning == "-":
+            body["reasoning"] = sys.stdin.read()
+        elif args.reasoning.startswith("@"):
+            body["reasoning"] = Path(args.reasoning[1:]).read_text()
+        else:
+            body["reasoning"] = args.reasoning
+    if args.order_id:
+        body["order_id"] = args.order_id
+    data = _request("POST", "/api/agent/decisions", json=body) or {}
+    _emit({"id": data.get("id"), "action": data.get("action"),
+           "instrument": data.get("instrument"), "status": data.get("status"),
+           "confidence": data.get("confidence")})
+
+
 # --- Nautilus artifacts: backtests + risk + strategies ----------------------
 
 def cmd_backtests(_: argparse.Namespace) -> None:
@@ -968,6 +998,33 @@ def _build_parser() -> argparse.ArgumentParser:
     sp.add_argument("instrument"); sp.set_defaults(fn=cmd_remove_instrument)
     sub.add_parser("restart", help="re-exec uvicorn so the engine reloads .env").set_defaults(fn=cmd_restart)
     sub.add_parser("pending", help="list queued unprocessed wake messages").set_defaults(fn=cmd_pending)
+    sp = sub.add_parser(
+        "decide",
+        help="post an AIDecision into the Decisions tab",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Record a trading decision the agent is making (or has just made).\n"
+            "The Decisions tab + GET /api/ai/decisions will pick it up via\n"
+            "the broadcasted ai_decision WS event.\n"
+            "\n"
+            "    helm-agent decide BUY AAPL.NASDAQ --conf 0.78 \\\n"
+            "        --thesis \"momentum confirmed by 30d above 200-DMA\"\n"
+            "    helm-agent decide HOLD --thesis \"choppy — wait for level\"\n"
+            "    helm-agent decide CLOSE GLD.ARCA --status executed \\\n"
+            "        --order-id O-... --thesis \"trim concentration\"\n"
+        ),
+    )
+    sp.add_argument("action", choices=["BUY", "SELL", "HOLD", "CLOSE",
+                                       "buy", "sell", "hold", "close"])
+    sp.add_argument("instrument", nargs="?", default=None)
+    sp.add_argument("--thesis", required=True, help="one-line summary")
+    sp.add_argument("--reasoning", default=None,
+                    help='full rationale; literal, "-" for stdin, or "@/path"')
+    sp.add_argument("--conf", type=float, default=0.7)
+    sp.add_argument("--status", default="proposed",
+                    choices=["proposed", "executed", "skipped", "rejected"])
+    sp.add_argument("--order-id", default=None, dest="order_id")
+    sp.set_defaults(fn=cmd_decide)
 
     # Nautilus artifacts (first-class)
     sub.add_parser("backtests", help="list saved Nautilus backtest results").set_defaults(fn=cmd_backtests)

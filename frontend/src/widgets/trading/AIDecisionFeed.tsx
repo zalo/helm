@@ -441,9 +441,11 @@ type AITab = "decisions" | "chat";
 const AI_TAB_STORAGE_KEY = "helm.aiDecisionFeed.tab";
 
 function loadAITab(): AITab {
-  if (typeof window === "undefined") return "decisions";
+  if (typeof window === "undefined") return "chat";
   const v = window.localStorage.getItem(AI_TAB_STORAGE_KEY);
-  return v === "chat" ? "chat" : "decisions";
+  // Chat is the default since the in-process AIBrain is off by default —
+  // the agent loop runs through the chat panel, so that's where to land.
+  return v === "decisions" ? "decisions" : "chat";
 }
 
 export default function AIDecisionFeed(_props: WidgetProps) {

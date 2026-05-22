@@ -170,7 +170,7 @@ def map_order(order: Any) -> dict[str, Any] | None:
         return None
 
 
-def map_position(position: Any) -> dict[str, Any] | None:
+def map_position(position: Any, last_price: float | None = None) -> dict[str, Any] | None:
     try:
         side_name = _enum_name(getattr(position, "side", None))
         if "LONG" in side_name:
@@ -181,8 +181,26 @@ def map_position(position: Any) -> dict[str, Any] | None:
             side = PositionSide.FLAT
 
         quantity = abs(_f(getattr(position, "quantity", None)))
-        last_px = _f(getattr(position, "last_px", None) or getattr(position, "avg_px_open", None))
         avg_px = _f(getattr(position, "avg_px_open", None))
+        # Prefer the caller-supplied live price; fall back to whatever Nautilus
+        # cached, then to avg_px so the row at least renders something sane.
+        last_px = (
+            last_price
+            if last_price is not None
+            else _f(getattr(position, "last_px", None) or 0.0)
+            or avg_px
+        )
+
+        # `position.unrealized_pnl` is a METHOD on Nautilus Position requiring a
+        # current Price; reading it as an attribute returns the bound method
+        # (which _f rounds to 0). Compute manually from avg_px and last_px so
+        # each position row carries a real P&L number.
+        if quantity > 0 and avg_px:
+            sign = 1.0 if side is PositionSide.LONG else (-1.0 if side is PositionSide.SHORT else 0.0)
+            upnl = round(sign * (last_px - avg_px) * quantity, 2)
+        else:
+            upnl = 0.0
+
         return Position(
             id=str(getattr(position, "id", "")) or str(id(position)),
             instrument=str(getattr(position, "instrument_id", "")),
@@ -191,7 +209,7 @@ def map_position(position: Any) -> dict[str, Any] | None:
             avg_px=avg_px,
             last_px=last_px,
             market_value=round(last_px * quantity, 2),
-            unrealized_pnl=_f(getattr(position, "unrealized_pnl", None)),
+            unrealized_pnl=upnl,
             realized_pnl=_f(getattr(position, "realized_pnl", None)),
             opened_at=_utc(getattr(position, "ts_opened", None)),
             strategy=str(getattr(position, "strategy_id", "ai-trader")),
@@ -489,11 +507,41 @@ class NautilusEngine(BaseEngine):
         else:
             equity = start + unrealized + realized
 
+        # Per-position unrealized sum is authoritative for the headline P&L —
+        # the portfolio.unrealized_pnl() loop above only summed `cache.instruments()`
+        # which can be empty until contracts qualify. Prefer the bigger number.
+        per_pos_upnl = sum(p.unrealized_pnl for p in positions)
+        if abs(per_pos_upnl) > abs(unrealized):
+            unrealized = per_pos_upnl
+
         for p in positions:
             net_exposure += p.market_value if p.side is PositionSide.LONG else -p.market_value
 
-        total_pnl = equity - start
-        self._equity_curve.append(EquityPoint(ts=now, equity=round(equity, 2)))
+        # Meaningful starting_equity: cost-basis of current holdings + free cash.
+        # That makes total_pnl = unrealized + realized — the actual P&L since
+        # the agent took its current positions. The previous behaviour anchored
+        # to a hard-coded HELM_STARTING_EQUITY env var which on a real account
+        # produced misleading "you're down $31k from your fake $100k start"
+        # readouts.
+        if accounts:
+            start = round(equity - unrealized - realized, 2)
+        total_pnl = round(unrealized + realized, 2)
+        # total_pnl_pct used to divide by HELM_STARTING_EQUITY ($100k); use
+        # the real cost-basis denominator now so percentages reflect actual moves.
+        total_pnl_pct = round((total_pnl / start) * 100.0, 4) if start else 0.0
+
+        # Equity-curve dedup: lightweight-charts requires strictly increasing
+        # timestamps at second resolution. Replace the trailing point if it
+        # falls in the same wall-second instead of appending a duplicate.
+        new_point = EquityPoint(ts=now, equity=round(equity, 2))
+        if (
+            self._equity_curve
+            and int(self._equity_curve[-1].ts.timestamp())
+            == int(new_point.ts.timestamp())
+        ):
+            self._equity_curve[-1] = new_point
+        else:
+            self._equity_curve.append(new_point)
         if len(self._equity_curve) > 2000:
             self._equity_curve = self._equity_curve[-2000:]
 
@@ -502,8 +550,8 @@ class NautilusEngine(BaseEngine):
             currency=self.settings.base_currency,
             equity=round(equity, 2),
             starting_equity=start,
-            total_pnl=round(total_pnl, 2),
-            total_pnl_pct=round((total_pnl / start) * 100.0, 4) if start else 0.0,
+            total_pnl=total_pnl,
+            total_pnl_pct=total_pnl_pct,
             unrealized_pnl=round(unrealized, 2),
             realized_pnl=round(realized, 2),
             net_exposure=round(net_exposure, 2),
@@ -514,6 +562,29 @@ class NautilusEngine(BaseEngine):
             equity_curve=list(self._equity_curve),
         )
 
+    def _last_price_for(self, instrument_id: Any) -> float | None:
+        """Best-effort live price lookup: last bar close (EXTERNAL or INTERNAL),
+        then the last cached quote_tick mid, then None."""
+        cache = self._cache
+        if cache is None:
+            return None
+        with contextlib.suppress(Exception):
+            from nautilus_trader.model.data import BarType
+
+            for src in ("EXTERNAL", "INTERNAL"):
+                with contextlib.suppress(Exception):
+                    bar_type = BarType.from_str(
+                        f"{instrument_id}-1-MINUTE-LAST-{src}"
+                    )
+                    bars = list(cache.bars(bar_type))
+                    if bars:
+                        return _f(bars[0].close)  # cache.bars() is newest-first
+        with contextlib.suppress(Exception):
+            quote = cache.quote_tick(instrument_id)
+            if quote is not None:
+                return (_f(quote.bid_price) + _f(quote.ask_price)) / 2.0
+        return None
+
     def get_positions(self) -> list[Position]:
         cache = self._cache
         if cache is None:
@@ -521,10 +592,27 @@ class NautilusEngine(BaseEngine):
         out: list[Position] = []
         with contextlib.suppress(Exception):
             for raw in cache.positions():
-                mapped = map_position(raw)
+                instrument_id = getattr(raw, "instrument_id", None)
+                last_price = self._last_price_for(instrument_id) if instrument_id else None
+                mapped = map_position(raw, last_price=last_price)
                 if mapped is not None:
                     out.append(Position(**mapped))
         return out
+
+    # Nautilus reconciles existing IB holdings at engine start by appending a
+    # synthetic FILLED order with the instrument id as its key — those show up
+    # as same-timestamp duplicates of every real holding. Filter them out so
+    # the UI only displays orders the agent (or strategy) actually submitted.
+    @staticmethod
+    def _is_reconciliation_phantom(order: Order, position_ids: set[str]) -> bool:
+        if not order.id:
+            return False
+        # Real Nautilus client_order_ids start with "O-" and embed a date.
+        if order.id.startswith("O-"):
+            return False
+        # Reconciliation phantoms use either the bare instrument id or the
+        # instrument's position id as the order id.
+        return order.id in position_ids or order.id == order.instrument
 
     def get_orders(self) -> list[Order]:
         cache = self._cache
@@ -536,6 +624,8 @@ class NautilusEngine(BaseEngine):
                 mapped = map_order(raw)
                 if mapped is not None:
                     out.append(Order(**mapped))
+        position_ids = {p.id for p in self.get_positions()}
+        out = [o for o in out if not self._is_reconciliation_phantom(o, position_ids)]
         out.sort(key=lambda o: o.ts, reverse=True)
         return out
 
@@ -639,6 +729,15 @@ class NautilusEngine(BaseEngine):
             "ai_status", self.get_ai_status().model_dump(mode="json")
         )
         return self.get_ai_status()
+
+    async def record_decision(self, decision: AIDecision) -> AIDecision:
+        """Append an externally-produced AIDecision (e.g. from helm-agent decide)
+        to the in-memory store + broadcast the ai_decision WS event so the
+        Decisions tab surfaces it next to anything the in-process brain
+        produced (when enabled)."""
+        self._decisions.append(decision)
+        await self.events.publish("ai_decision", decision.model_dump(mode="json"))
+        return decision
 
     # -- agent-driven order ops --------------------------------------------
     def _agent_strategy(self) -> Any:

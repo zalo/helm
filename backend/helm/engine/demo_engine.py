@@ -693,6 +693,11 @@ class DemoEngine(BaseEngine):
             await self._set_ai_state(AIState.IDLE)
         return self.get_ai_status()
 
+    async def record_decision(self, decision: AIDecision) -> AIDecision:
+        self._decisions.append(decision)
+        await self.events.publish("ai_decision", decision.model_dump(mode="json"))
+        return decision
+
     # -- agent-driven order ops --------------------------------------------
     async def submit_order(
         self,

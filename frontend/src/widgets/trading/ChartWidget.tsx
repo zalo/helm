@@ -51,10 +51,18 @@ function BarsTab({ active }: { active: string }) {
     queryFn: () => api.bars(active),
     enabled: !!active,
   });
+  // Used to draw the cost-basis line for the currently-charted instrument.
+  const positions = useQuery({
+    queryKey: ["positions"],
+    queryFn: api.positions,
+    refetchInterval: 30_000,
+  });
   const hostRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const volRef = useRef<ISeriesApi<"Histogram"> | null>(null);
+  const smaRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const priceLinesRef = useRef<unknown[]>([]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -100,7 +108,63 @@ function BarsTab({ active }: { active: string }) {
     candle.setData(candleData);
     vol.setData(volData);
     chartRef.current?.timeScale().fitContent();
+
+    // SMA(20) overlay — built once per dataset refresh, cleared first.
+    const chart = chartRef.current;
+    if (chart) {
+      if (smaRef.current) {
+        try { chart.removeSeries(smaRef.current); } catch { /* ignore */ }
+        smaRef.current = null;
+      }
+      if (bars.data.length >= 20) {
+        const sma = chart.addLineSeries({
+          color: "#f0a020", lineWidth: 1, priceLineVisible: false,
+          lastValueVisible: false, crosshairMarkerVisible: false,
+        });
+        const smaData: LineData[] = [];
+        let window = 0;
+        for (let i = 0; i < bars.data.length; i++) {
+          window += bars.data[i].close;
+          if (i >= 20) window -= bars.data[i - 20].close;
+          if (i >= 19) {
+            smaData.push({
+              time: tsToSec(bars.data[i].ts) as UTCTimestamp,
+              value: window / 20,
+            });
+          }
+        }
+        sma.setData(smaData);
+        smaRef.current = sma;
+      }
+    }
   }, [bars.data]);
+
+  // Avg-cost price line for the open position on `active`, if any. Re-runs
+  // whenever positions or active change. Multiple lots in the future would
+  // mean multiple lines; today we have one position per instrument max.
+  useEffect(() => {
+    const candle = candleRef.current;
+    if (!candle) return;
+    for (const pl of priceLinesRef.current) {
+      try { (candle as ISeriesApi<"Candlestick"> & {
+        removePriceLine: (l: unknown) => void;
+      }).removePriceLine(pl); } catch { /* already removed */ }
+    }
+    priceLinesRef.current = [];
+    const pos = (positions.data ?? []).find(
+      (p) => p.instrument === active && p.side !== "FLAT",
+    );
+    if (!pos) return;
+    const line = candle.createPriceLine({
+      price: pos.avg_px,
+      color: pos.side === "LONG" ? chartColors.up : chartColors.down,
+      lineWidth: 1,
+      lineStyle: 2,  // dashed
+      axisLabelVisible: true,
+      title: `avg ${pos.side[0]}${pos.quantity}`,
+    });
+    priceLinesRef.current.push(line);
+  }, [active, positions.data]);
 
   useEffect(() => {
     if (!active) return;

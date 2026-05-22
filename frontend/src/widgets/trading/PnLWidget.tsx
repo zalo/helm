@@ -66,10 +66,16 @@ export default function PnLWidget(_props: WidgetProps) {
   useEffect(() => {
     const series = seriesRef.current;
     if (!series || !data) return;
-    const points: AreaData[] = data.equity_curve.map((pt) => ({
-      time: tsToSec(pt.ts) as UTCTimestamp,
-      value: pt.equity,
-    }));
+    // Defensive dedup: lightweight-charts throws on duplicate or out-of-order
+    // timestamps. The backend now dedups too, but keep the safety net here
+    // so any future regression doesn't crash the whole pane.
+    const seen = new Map<number, number>();
+    for (const pt of data.equity_curve) {
+      seen.set(tsToSec(pt.ts), pt.equity);  // last writer wins per second
+    }
+    const points: AreaData[] = [...seen.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([t, v]) => ({ time: t as UTCTimestamp, value: v }));
     series.setData(points);
     chartRef.current?.timeScale().fitContent();
   }, [data]);

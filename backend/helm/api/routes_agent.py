@@ -24,6 +24,8 @@ from helm.artifacts import get_artifact, list_artifacts
 from helm.config import get_settings
 from helm.engine.manager import get_broadcaster, get_engine
 from helm.models import (
+    AIAction,
+    AIDecision,
     BacktestResult,
     BacktestSummary,
     Order,
@@ -305,6 +307,40 @@ def _drop_full(d: dict[str, Any]) -> dict[str, Any]:
     for k in ("equity_curve", "trades", "exposures", "scenarios", "notes"):
         out.pop(k, None)
     return out
+
+
+class DecisionRequest(BaseModel):
+    """An externally-produced trading decision the agent wants surfaced."""
+    action: str = Field(..., pattern="^(BUY|SELL|HOLD|CLOSE)$")
+    instrument: str | None = None
+    confidence: float = Field(0.7, ge=0.0, le=1.0)
+    thesis: str = Field(..., min_length=1)
+    reasoning: str = ""
+    order_id: str | None = None
+    status: str = Field("proposed", pattern="^(proposed|executed|skipped|rejected)$")
+
+
+@router.post("/decisions", response_model=AIDecision)
+async def post_decision(req: DecisionRequest) -> AIDecision:
+    """Push a decision into the Decisions feed.
+
+    The in-process AIBrain timer is disabled by default; this endpoint is the
+    canonical way for an external agent (helm-agent decide …) to put a
+    decision into the Decisions tab.
+    """
+    import uuid as _uuid
+    decision = AIDecision(
+        id=f"dec-{_uuid.uuid4().hex[:12]}",
+        ts=datetime.now(timezone.utc),
+        action=AIAction(req.action),
+        instrument=req.instrument,
+        confidence=req.confidence,
+        thesis=req.thesis,
+        reasoning=req.reasoning or req.thesis,
+        order_id=req.order_id,
+        status=req.status,
+    )
+    return await get_engine().record_decision(decision)
 
 
 @router.get("/strategies", response_model=list[StrategyInfo])

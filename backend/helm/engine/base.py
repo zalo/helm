@@ -77,6 +77,9 @@ class BaseEngine(abc.ABC):
     @abc.abstractmethod
     async def ai_control(self, request: AIControlRequest) -> AITraderStatus: ...
 
+    @abc.abstractmethod
+    async def record_decision(self, decision: AIDecision) -> AIDecision: ...
+
     # --- order operations (agent-driven) ----------------------------------
     @abc.abstractmethod
     async def submit_order(
