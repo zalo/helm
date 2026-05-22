@@ -33,3 +33,16 @@ backend/data/
 # Agent CLI chat ring buffer (disk-backed history for the Chat panel).
 .chat_history.json
 backend/.chat_history.json
+
+# Per-user OpenBB virtualenv — should be created locally, never committed.
+openbb-venv/
+
+# `npx skills add` artifacts. SKILL.md files under .agents/skills/ are the
+# installed-skill bodies; skills-lock.json is the install manifest.
+.agents/
+skills-lock.json
+
+# Project-scope Claude Code settings live at repo-root .claude/.
+# `backend/.claude/` is a stray duplicate from running `helm-agent install`
+# while cwd was backend/ — ignore so it doesn't get re-tracked.
+backend/.claude/
