@@ -31,10 +31,10 @@ from helm.models import WsEvent
 
 log = logging.getLogger("helm.notify")
 
-# Order statuses worth a notification — INITIALIZED / ACCEPTED transitions
-# are too chatty (one per order regardless of intent).
-_NOTIFIABLE_ORDER_STATUSES = {"FILLED", "PARTIALLY_FILLED", "REJECTED",
-                              "CANCELED", "EXPIRED"}
+# Order statuses worth a notification. INITIALIZED/ACCEPTED transitions are
+# too chatty. PARTIALLY_FILLED is also suppressed — IB pushes its own per-fill
+# notifications to the broker app, so helm would just duplicate them.
+_NOTIFIABLE_ORDER_STATUSES = {"FILLED", "REJECTED", "CANCELED", "EXPIRED"}
 
 
 def _format_event(event: WsEvent) -> dict[str, Any] | None:
