@@ -105,6 +105,27 @@ def _format_event(event: WsEvent) -> dict[str, Any] | None:
             "tag": "wake",
         }
 
+    if event.type == "position_alert":
+        instrument = p.get("instrument") or "?"
+        kind = p.get("kind") or "alert"
+        severity = (p.get("severity") or "notify").upper()
+        price = p.get("price")
+        level = p.get("level")
+        action = p.get("action") or ""
+        prefix = "EMERGENCY" if severity == "EMERGENCY" else "Alert"
+        body_bits = [f"{kind} @ {level}"]
+        if price is not None:
+            body_bits.append(f"(now {price})")
+        if action == "auto_flatten":
+            body_bits.append("→ AUTO-FLATTENED")
+        return {
+            "title": f"{prefix}: {instrument.split('.')[0]}",
+            "body": " ".join(str(b) for b in body_bits),
+            "url": "/",
+            # One slot per (instrument, kind) so re-fires replace rather than stack.
+            "tag": f"posalert-{instrument}-{kind}",
+        }
+
     return None
 
 

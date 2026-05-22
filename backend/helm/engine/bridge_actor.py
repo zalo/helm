@@ -106,8 +106,18 @@ def build_bridge_actor(events: EventBroadcaster, instrument_ids: list[Any] | Non
                 from helm.engine.nautilus_engine import map_order
 
                 payload = map_order(order)
-                if payload is not None:
-                    self._publish("order", payload)
+                if payload is None:
+                    return
+                # Drop reconciliation phantoms — at engine start Nautilus
+                # replays every historical IB fill through msgbus to seed the
+                # cache. Those events have client_order_ids that don't start
+                # with "O-" (the live-order prefix) and would wake any sleep
+                # parked on `--on-event order`. They're already filtered out
+                # of /api/trading/orders for the same reason.
+                oid = payload.get("id") or ""
+                if not oid.startswith("O-"):
+                    return
+                self._publish("order", payload)
             except Exception:  # pragma: no cover - defensive
                 log.debug("BridgeActor order event mapping failed", exc_info=True)
 

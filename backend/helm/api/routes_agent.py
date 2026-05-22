@@ -368,6 +368,70 @@ async def notify(req: NotifyRequest) -> dict[str, Any]:
     return await send_notification(get_settings().notify_url, payload)
 
 
+# --- position watcher ------------------------------------------------------
+#
+# CRUD for per-instrument price thresholds consumed by helm/position_watcher.py.
+# Thresholds live in backend/.watcher.json (gitignored). The watcher hot-reloads
+# the file on every price tick so changes here take effect immediately.
+
+
+class WatcherThreshold(BaseModel):
+    instrument: str = Field(..., min_length=1)
+    notify_low: float | None = None
+    notify_high: float | None = None
+    emergency_low: float | None = None
+    emergency_high: float | None = None
+    note: str = ""
+
+
+@router.get("/watcher")
+async def list_watcher() -> dict[str, Any]:
+    from helm.position_watcher import load_config
+
+    cfg = load_config(get_settings())
+    items = [
+        {
+            "instrument": t.instrument,
+            "notify_low": t.notify_low,
+            "notify_high": t.notify_high,
+            "emergency_low": t.emergency_low,
+            "emergency_high": t.emergency_high,
+            "note": t.note,
+        }
+        for t in cfg.values()
+    ]
+    return {"count": len(items), "thresholds": items}
+
+
+@router.put("/watcher/{instrument}")
+async def set_watcher(instrument: str, req: WatcherThreshold) -> dict[str, Any]:
+    from helm.position_watcher import Threshold, load_config, save_config
+
+    settings = get_settings()
+    cfg = load_config(settings)
+    cfg[instrument] = Threshold(
+        instrument=instrument,
+        notify_low=req.notify_low,
+        notify_high=req.notify_high,
+        emergency_low=req.emergency_low,
+        emergency_high=req.emergency_high,
+        note=req.note,
+    )
+    save_config(settings, cfg)
+    return {"instrument": instrument, "saved": True}
+
+
+@router.delete("/watcher/{instrument}")
+async def delete_watcher(instrument: str) -> dict[str, Any]:
+    from helm.position_watcher import load_config, save_config
+
+    settings = get_settings()
+    cfg = load_config(settings)
+    removed = cfg.pop(instrument, None) is not None
+    save_config(settings, cfg)
+    return {"instrument": instrument, "removed": removed}
+
+
 # --- TradingView webhook receiver ------------------------------------------
 #
 # TradingView's alert form lets you set a webhook URL + a free-form body.

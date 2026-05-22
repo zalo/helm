@@ -60,6 +60,10 @@ backend/scripts/.cache/
 .chat_history.json
 backend/.chat_history.json
 
+# Position-watcher threshold config (per-user, contains current holdings).
+.watcher.json
+backend/.watcher.json
+
 # Per-user OpenBB virtualenv — should be created locally, never committed.
 openbb-venv/
 

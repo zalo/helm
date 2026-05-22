@@ -38,17 +38,22 @@ def openbb_available() -> bool:
 async def lifespan(app: FastAPI):
     from helm.engine.manager import get_broadcaster
     from helm.notifications import NotifyPublisher
+    from helm.position_watcher import PositionWatcher
 
     settings = get_settings()
     engine = build_engine(settings)
-    notifier = NotifyPublisher(settings, get_broadcaster())
+    broadcaster = get_broadcaster()
+    notifier = NotifyPublisher(settings, broadcaster)
+    watcher = PositionWatcher(settings, broadcaster, engine)
     log.info("Starting Helm engine (mode=%s)…", settings.mode)
     await engine.start()
     await notifier.start()
+    await watcher.start()
     try:
         yield
     finally:
         log.info("Stopping Helm engine…")
+        await watcher.stop()
         await notifier.stop()
         await engine.stop()
 

@@ -109,7 +109,9 @@ class Settings(BaseSettings):
     notify_url: str = "http://127.0.0.1:3000/api/notify"
     notify_enabled: bool = True
     notify_events: Annotated[list[str], NoDecode] = Field(
-        default_factory=lambda: ["order", "agent_message", "tv_alert", "wake"]
+        default_factory=lambda: [
+            "order", "agent_message", "tv_alert", "wake", "position_alert",
+        ]
     )
 
     _normalize_notify_events = field_validator(

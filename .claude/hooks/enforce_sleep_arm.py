@@ -98,10 +98,12 @@ def main() -> int:
 
     sys.stderr.write(
         "TURN-END GUARD: end every turn by re-arming the helm-agent CLI so "
-        "the next wake event can fire. Run this now and wait on it:\n\n"
-        "    helm-agent sleep --on-event wake\n\n"
-        "When it returns, that is the next user/webui message — handle it, "
-        "post a reply with `helm-agent say \"<reply>\"`, then re-arm again.\n"
+        "the next wake/alert event can fire. Run this now and wait on it:\n\n"
+        "    helm-agent sleep --on-event wake,position_alert,order,tv_alert\n\n"
+        "(Or just `helm-agent sleep` — the CLI defaults to that set when no\n"
+        "other trigger is configured.)\n\n"
+        "When it returns, handle the trigger and post a reply with `helm-agent\n"
+        "say \"<reply>\"` if it was a wake, then re-arm again.\n"
     )
     return 2
 

@@ -784,6 +784,54 @@ def cmd_strategies(_: argparse.Namespace) -> None:
     _emit({"strategies_count": len(rows), "strategies": rows})
 
 
+# ----------------------------------------------------------------------------- #
+# Position watcher (per-instrument price thresholds)
+# ----------------------------------------------------------------------------- #
+
+
+def cmd_watcher_list(_: argparse.Namespace) -> None:
+    """Show every configured threshold. Each fires a ``position_alert`` WS
+    event on cross — `notify_*` levels page the human; `emergency_*` levels
+    additionally market-flatten the position."""
+    data = _request("GET", "/api/agent/watcher") or {}
+    items = data.get("thresholds") or []
+    if not items:
+        _emit({"thresholds_count": 0,
+               "note": "no position-watcher thresholds configured"},
+              suggestions=[
+                  "helm-agent watcher set AAPL.NASDAQ --notify-low 240 --emergency-low 220",
+              ])
+        return
+    rows = [{
+        "instrument": t["instrument"],
+        "notify_low": t.get("notify_low"),
+        "notify_high": t.get("notify_high"),
+        "emergency_low": t.get("emergency_low"),
+        "emergency_high": t.get("emergency_high"),
+        "note": _trunc(t.get("note") or "", 80)["value"],
+    } for t in items]
+    _emit({"thresholds_count": len(rows), "thresholds": rows})
+
+
+def cmd_watcher_set(args: argparse.Namespace) -> None:
+    """Create/replace the threshold set for one instrument. All bounds optional."""
+    body: dict[str, Any] = {
+        "instrument": args.instrument,
+        "notify_low": args.notify_low,
+        "notify_high": args.notify_high,
+        "emergency_low": args.emergency_low,
+        "emergency_high": args.emergency_high,
+        "note": args.note or "",
+    }
+    data = _request("PUT", f"/api/agent/watcher/{args.instrument}", json=body) or {}
+    _emit(data)
+
+
+def cmd_watcher_remove(args: argparse.Namespace) -> None:
+    data = _request("DELETE", f"/api/agent/watcher/{args.instrument}") or {}
+    _emit(data)
+
+
 def cmd_pause(_: argparse.Namespace) -> None:
     data = _request("POST", "/api/ai/control", json={"action": "pause"}) or {}
     _emit({"ai_state": data.get("state"), "enabled": data.get("enabled")})
@@ -843,9 +891,18 @@ def cmd_sleep(args: argparse.Namespace) -> None:
             )
             return
 
+    # Mirror the default-trigger logic in _sleep_async so the pending-queue
+    # precheck also fires when the caller relied on the implicit default.
+    has_any_other_trigger = bool(
+        args.on_price or args.on_stdin or args.seconds or args.until
+    )
+    effective_events = args.on_event
+    if effective_events is None and not has_any_other_trigger:
+        effective_events = DEFAULT_SLEEP_EVENTS
+
     if (
         not args.no_pending
-        and (args.on_event is None or "wake" in args.on_event.split(","))
+        and (effective_events is None or "wake" in effective_events.split(","))
     ):
         pending = _request("GET", "/api/agent/pending") or {}
         items = pending.get("messages") or []
@@ -860,7 +917,7 @@ def cmd_sleep(args: argparse.Namespace) -> None:
                 },
                 suggestions=[
                     'helm-agent say "<reply>"                 # auto-acks this wake',
-                    "helm-agent sleep --on-event wake        # RE-ARM after replying",
+                    f"helm-agent sleep --on-event {DEFAULT_SLEEP_EVENTS}    # RE-ARM after replying",
                 ],
             )
             return
@@ -900,7 +957,16 @@ async def _sleep_async(args: argparse.Namespace) -> None:
             _emit({"error": "bad --on-price", "help": "use INSTR>PRICE or INSTR<PRICE"})
             sys.exit(2)
 
-    event_types = set((args.on_event or "").split(",")) if args.on_event else None
+    # Default to the canonical trigger set when the caller didn't specify
+    # any wakeup mechanism — sleep should always cover wake/position_alert/
+    # order/tv_alert so the agent gets paged on anything material.
+    has_any_other_trigger = bool(
+        args.on_price or args.on_stdin or args.seconds or args.until
+    )
+    on_event = args.on_event
+    if on_event is None and not has_any_other_trigger:
+        on_event = DEFAULT_SLEEP_EVENTS
+    event_types = set(on_event.split(",")) if on_event else None
 
     stdin_task = None
     if args.on_stdin:
@@ -977,10 +1043,24 @@ async def _sleep_async(args: argparse.Namespace) -> None:
 
     result = done.pop().result()
     is_wake = isinstance(result, dict) and result.get("type") == "wake"
-    suggestions = [
-        'helm-agent say "<reply>"                 # auto-acks the pending wake',
-        "helm-agent sleep --on-event wake        # RE-ARM after replying",
-    ] if is_wake else None
+    is_alert = isinstance(result, dict) and result.get("type") == "position_alert"
+    if is_wake:
+        suggestions = [
+            'helm-agent say "<reply>"                 # auto-acks the pending wake',
+            f"helm-agent sleep --on-event {DEFAULT_SLEEP_EVENTS}    # RE-ARM after replying",
+        ]
+    elif is_alert:
+        instr = (result.get("payload") or {}).get("instrument") or "<instr>"
+        suggestions = [
+            f"helm-agent positions                   # inspect current state of {instr}",
+            f"helm-agent bars {instr}                # look at recent price action",
+            f"helm-agent close {instr}               # flatten if conditions warrant",
+            f"helm-agent sleep --on-event {DEFAULT_SLEEP_EVENTS}    # RE-ARM",
+        ]
+    else:
+        suggestions = [
+            f"helm-agent sleep --on-event {DEFAULT_SLEEP_EVENTS}    # RE-ARM",
+        ]
     if isinstance(result, str):  # stdin readline
         _emit({"trigger": "stdin", "line": result.rstrip()})
     else:
@@ -1026,19 +1106,25 @@ def cmd_install(_: argparse.Namespace) -> None:
 # Entry point
 # ----------------------------------------------------------------------------- #
 
+DEFAULT_SLEEP_EVENTS = "wake,position_alert,order,tv_alert"
+
 _REARM_LOOP = (
-    "Re-arm loop (always end a turn parked on the wake event):\n"
-    "  1. helm-agent sleep --on-event wake          # block until a webui chat msg\n"
+    "Re-arm loop (always end a turn parked on the canonical event set):\n"
+    f"  1. helm-agent sleep --on-event {DEFAULT_SLEEP_EVENTS}\n"
     "  2. <process the returned trigger payload>\n"
-    "  3. helm-agent say \"<reply>\"                  # post a reply (auto-acks pending)\n"
-    "  4. helm-agent sleep --on-event wake          # re-arm before ending the turn\n"
+    "  3. helm-agent say \"<reply>\"     # for wake triggers (auto-acks pending)\n"
+    f"  4. helm-agent sleep --on-event {DEFAULT_SLEEP_EVENTS}    # re-arm before turn-end\n"
     "\n"
-    "  The .claude/hooks/enforce_sleep_arm.py Stop-hook BLOCKS turn-end if the\n"
-    "  last Bash call wasn't `helm-agent sleep --on-event wake`. If you skip\n"
-    "  step 4 the hook will re-inject a system reminder forcing you to do it.\n"
-    "  `helm-agent sleep` pre-polls /api/agent/pending so any wakes that\n"
-    "  arrived while you were busy are returned immediately as `trigger:\n"
-    "  queued` — no message is ever dropped."
+    "  The default trigger set covers: webui chat (`wake`), position-watcher\n"
+    "  threshold breaches (`position_alert`), broker order state changes\n"
+    "  (`order`), and TradingView webhook alerts (`tv_alert`). The\n"
+    "  .claude/hooks/enforce_sleep_arm.py Stop-hook BLOCKS turn-end if the\n"
+    "  last Bash call wasn't a `helm-agent sleep --on-event ...` that\n"
+    "  includes `wake`. If you skip step 4 the hook re-injects a system\n"
+    "  reminder forcing you to do it. `helm-agent sleep` pre-polls\n"
+    "  /api/agent/pending so any wakes that arrived while you were busy are\n"
+    "  returned immediately as `trigger: queued` — no message is ever\n"
+    "  dropped."
 )
 
 
@@ -1230,6 +1316,39 @@ def _build_parser() -> argparse.ArgumentParser:
     sub.add_parser("pause", help="pause the in-engine AI trader").set_defaults(fn=cmd_pause)
     sub.add_parser("resume", help="resume the in-engine AI trader").set_defaults(fn=cmd_resume)
 
+    # Position watcher
+    wp = sub.add_parser(
+        "watcher",
+        help="manage per-instrument price thresholds (notify + emergency-flatten)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=(
+            "Per-instrument price triggers. The watcher is a long-running task in\n"
+            "the helm backend that subscribes to bar/quote events; on every tick\n"
+            "it checks the configured thresholds and fires a `position_alert` WS\n"
+            "event when one is crossed.\n"
+            "\n"
+            "  notify_low / notify_high       → alert only (pages the human)\n"
+            "  emergency_low / emergency_high → alert + market-flatten the position\n"
+            "\n"
+            "A threshold re-arms once price moves >1% back across the level — so a\n"
+            "fresh re-test fires a new alert, but jitter doesn't spam."
+        ),
+    )
+    wsub = wp.add_subparsers(dest="watcher_cmd")
+    wsub.add_parser("list", help="show every configured threshold").set_defaults(fn=cmd_watcher_list)
+    wset = wsub.add_parser("set", help="create/replace thresholds for one instrument")
+    wset.add_argument("instrument")
+    wset.add_argument("--notify-low", type=float, default=None)
+    wset.add_argument("--notify-high", type=float, default=None)
+    wset.add_argument("--emergency-low", type=float, default=None)
+    wset.add_argument("--emergency-high", type=float, default=None)
+    wset.add_argument("--note", default="")
+    wset.set_defaults(fn=cmd_watcher_set)
+    wrm = wsub.add_parser("remove", help="delete the threshold set for one instrument")
+    wrm.add_argument("instrument")
+    wrm.set_defaults(fn=cmd_watcher_remove)
+    wp.set_defaults(fn=cmd_watcher_list)  # `helm-agent watcher` = list
+
     # Sleep
     sp = sub.add_parser(
         "sleep",
@@ -1253,7 +1372,9 @@ def _build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--seconds", type=float, default=None)
     sp.add_argument("--until", help="absolute ISO-8601 deadline, e.g. 2026-05-16T13:30:00Z")
     sp.add_argument("--on-price", help='INSTR>PX or INSTR<PX (e.g. "AAPL.NASDAQ>250")')
-    sp.add_argument("--on-event", help='comma-separated WS event types (e.g. "bar,order,position,wake")')
+    sp.add_argument("--on-event",
+                    help=f'comma-separated WS event types. Defaults to "{DEFAULT_SLEEP_EVENTS}" '
+                         "when no other trigger is configured.")
     sp.add_argument("--on-stdin", action="store_true", help="wake on stdin newline")
     sp.add_argument("--no-pending", action="store_true",
                     help="skip the /api/agent/pending queue precheck, only watch live events")
