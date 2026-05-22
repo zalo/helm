@@ -21,28 +21,34 @@ log = logging.getLogger("helm.api.ws")
 router = APIRouter()
 
 
-def _event(type_: str, payload: dict) -> dict:
-    return WsEvent(
+def _event(type_: str, payload: dict, *, snapshot: bool = False) -> dict:
+    evt = WsEvent(
         type=type_,  # type: ignore[arg-type]
         ts=datetime.now(timezone.utc),
         payload=payload,
     ).model_dump(mode="json")
+    # Mark snapshot-burst events so programmatic subscribers (helm-agent
+    # sleep, anything driving the CLI off of /ws) can ignore them. The web
+    # UI doesn't care — it accepts the same event whether snapshot or live.
+    if snapshot:
+        evt["snapshot"] = True
+    return evt
 
 
 async def _send_snapshot(ws: WebSocket) -> None:
     """Push the current engine state so a fresh client is immediately populated."""
     engine = get_engine()
     try:
-        await ws.send_json(_event("portfolio", engine.get_portfolio().model_dump(mode="json")))
-        await ws.send_json(_event("ai_status", engine.get_ai_status().model_dump(mode="json")))
+        await ws.send_json(_event("portfolio", engine.get_portfolio().model_dump(mode="json"), snapshot=True))
+        await ws.send_json(_event("ai_status", engine.get_ai_status().model_dump(mode="json"), snapshot=True))
         for account in engine.get_accounts():
-            await ws.send_json(_event("account", account.model_dump(mode="json")))
+            await ws.send_json(_event("account", account.model_dump(mode="json"), snapshot=True))
         for position in engine.get_positions():
-            await ws.send_json(_event("position", position.model_dump(mode="json")))
+            await ws.send_json(_event("position", position.model_dump(mode="json"), snapshot=True))
         for order in engine.get_orders()[:25]:
-            await ws.send_json(_event("order", order.model_dump(mode="json")))
+            await ws.send_json(_event("order", order.model_dump(mode="json"), snapshot=True))
         for decision in engine.get_ai_decisions(limit=15):
-            await ws.send_json(_event("ai_decision", decision.model_dump(mode="json")))
+            await ws.send_json(_event("ai_decision", decision.model_dump(mode="json"), snapshot=True))
     except Exception:  # pragma: no cover - snapshot is best-effort
         log.debug("ws snapshot burst failed", exc_info=True)
 

@@ -994,6 +994,13 @@ async def _sleep_async(args: argparse.Namespace) -> None:
                             msg = json.loads(raw)
                         except Exception:
                             continue
+                        # Snapshot-burst events are the engine replaying its
+                        # current state for a fresh client (positions, recent
+                        # orders, etc). They're useful to the web UI but a
+                        # programmatic sleep should only fire on LIVE state
+                        # changes, otherwise every /ws reconnect would trip.
+                        if msg.get("snapshot"):
+                            continue
                         etype = msg.get("type")
                         payload = msg.get("payload") or {}
                         if event_types and etype in event_types:

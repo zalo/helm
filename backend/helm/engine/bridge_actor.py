@@ -108,14 +108,15 @@ def build_bridge_actor(events: EventBroadcaster, instrument_ids: list[Any] | Non
                 payload = map_order(order)
                 if payload is None:
                     return
-                # Drop reconciliation phantoms — at engine start Nautilus
-                # replays every historical IB fill through msgbus to seed the
-                # cache. Those events have client_order_ids that don't start
-                # with "O-" (the live-order prefix) and would wake any sleep
-                # parked on `--on-event order`. They're already filtered out
-                # of /api/trading/orders for the same reason.
-                oid = payload.get("id") or ""
-                if not oid.startswith("O-"):
+                # Drop reconciliation phantoms — at engine start (and after a
+                # restart) Nautilus replays every historical IB fill through
+                # msgbus to seed the cache. Those events are tagged
+                # strategy="EXTERNAL"; real strategy submissions carry the
+                # actual strategy id (e.g. "ai-trader"). Without this filter
+                # every /ws reconnect would fire a stale `order` event and
+                # wake any sleep parked on `--on-event order`.
+                strategy = (payload.get("strategy") or "").upper()
+                if strategy == "EXTERNAL":
                     return
                 self._publish("order", payload)
             except Exception:  # pragma: no cover - defensive
