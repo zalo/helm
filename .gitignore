@@ -26,9 +26,35 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Helm runtime
+# Helm runtime artifacts.
+#
+# Convention for ANY analysis the engine or an agent generates at runtime
+# (risk analyses, backtest results, trade journals, snapshots, scenario
+# reports, factor models, correlation matrices, …): write it under
+# `backend/data/<kind>/<id>.json`. Everything below that path is ignored.
+#
+# Committed examples ship under `backend/helm/data_seed/<kind>/` and are
+# NOT ignored — that's where seed fixtures + canonical schemas live.
 backend/data/
 *.log
+
+# Output dirs that agent scripts may write into.
+backend/scripts/output/
+backend/scripts/.cache/
+
+# Catch-all for analysis-style folders created anywhere in the tree.
+**/analyses/
+**/reports/
+**/journal/
+**/snapshots/
+
+# Common generated-artifact file types. Anything legitimately committed
+# under those extensions should live in a `data_seed/` dir or be added
+# with `git add -f`.
+*.parquet
+*.pdf
+*.html.tmp
+*.csv.tmp
 
 # Agent CLI chat ring buffer (disk-backed history for the Chat panel).
 .chat_history.json

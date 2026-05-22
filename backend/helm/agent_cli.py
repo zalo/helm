@@ -642,6 +642,26 @@ def cmd_resume(_: argparse.Namespace) -> None:
 # Sleep / triggers
 # ----------------------------------------------------------------------------- #
 
+_SLEEP_PID_FILE = Path.home() / ".cache" / "helm-agent" / "sleep.pid"
+
+
+def _existing_sleep_pid() -> int | None:
+    """Return the PID of an already-running ``helm-agent sleep`` (if alive)."""
+    try:
+        raw = _SLEEP_PID_FILE.read_text().strip()
+    except OSError:
+        return None
+    try:
+        pid = int(raw)
+    except ValueError:
+        return None
+    try:
+        os.kill(pid, 0)  # signal 0 = "are you alive?"
+    except OSError:
+        return None
+    return pid
+
+
 def cmd_sleep(args: argparse.Namespace) -> None:
     """Block until any configured trigger fires. Prints the trigger result and exits 0.
 
@@ -649,7 +669,24 @@ def cmd_sleep(args: argparse.Namespace) -> None:
     wakes (delivered while the agent was busy or offline), emit the oldest one
     immediately and exit. Caller can pass --no-pending to skip the queue check
     and only watch live events.
+
+    De-dup: if a previous ``helm-agent sleep`` is still running, this call
+    emits an ``already_armed`` status and exits 0 without starting a second
+    subscriber. The Stop-hook is still satisfied (the last Bash command WAS
+    ``helm-agent sleep --on-event wake``) but we don't accumulate parked
+    subscribers across turns. Pass ``--force`` to override.
     """
+    if not args.force:
+        existing = _existing_sleep_pid()
+        if existing is not None:
+            _emit(
+                {"already_armed": True, "pid": existing,
+                 "note": "another helm-agent sleep is already parked on /ws; "
+                         "not starting a second one. Pass --force to override."},
+                suggestions=[f"kill {existing}  # if you actually want to replace it"],
+            )
+            return
+
     if (
         not args.no_pending
         and (args.on_event is None or "wake" in args.on_event.split(","))
@@ -671,7 +708,16 @@ def cmd_sleep(args: argparse.Namespace) -> None:
                 ],
             )
             return
-    asyncio.run(_sleep_async(args))
+
+    _SLEEP_PID_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _SLEEP_PID_FILE.write_text(str(os.getpid()))
+    try:
+        asyncio.run(_sleep_async(args))
+    finally:
+        with contextlib.suppress(OSError):
+            # Remove only if we still own it (some other sleep might've taken over).
+            if _SLEEP_PID_FILE.read_text().strip() == str(os.getpid()):
+                _SLEEP_PID_FILE.unlink()
 
 
 async def _sleep_async(args: argparse.Namespace) -> None:
@@ -983,6 +1029,9 @@ def _build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--on-stdin", action="store_true", help="wake on stdin newline")
     sp.add_argument("--no-pending", action="store_true",
                     help="skip the /api/agent/pending queue precheck, only watch live events")
+    sp.add_argument("--force", action="store_true",
+                    help="start a second subscriber even if one is already parked "
+                         "(default: exit with already_armed status, keeps process count bounded)")
     sp.set_defaults(fn=cmd_sleep)
 
     sub.add_parser("install", help="self-install SessionStart hook for Claude Code").set_defaults(fn=cmd_install)
