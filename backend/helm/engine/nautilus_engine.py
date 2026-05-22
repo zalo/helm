@@ -564,23 +564,41 @@ class NautilusEngine(BaseEngine):
         return out
 
     def get_bars(self, instrument: str, count: int = 300) -> list[Bar]:
+        """Return 1-min bars for ``instrument``, merging INTERNAL + EXTERNAL keys.
+
+        Nautilus stores bars under a bar_type that includes the aggregation
+        source (``…-LAST-INTERNAL`` vs ``…-LAST-EXTERNAL``). They cover the
+        same OHLCV — just two ways to get there (locally aggregated from trade
+        ticks vs IB's reqHistoricalData). Reading both and de-duping by
+        ts_event gives the union, so the caller never has to care which path
+        produced a given bar.
+        """
         cache = self._cache
         if cache is None:
             return []
-        out: list[Bar] = []
+        merged: dict[int, Bar] = {}
         with contextlib.suppress(Exception):
             from nautilus_trader.model.data import BarType
 
-            from helm.config import bar_type_str
-
-            bar_type = BarType.from_str(bar_type_str(instrument))
-            raw_bars = cache.bars(bar_type)
-            # cache.bars() returns newest-first; reverse to oldest-first.
-            for raw in reversed(list(raw_bars)[:count]):
-                mapped = map_bar(raw)
-                if mapped is not None:
-                    out.append(Bar(**mapped))
-        return out
+            for src in ("INTERNAL", "EXTERNAL"):
+                with contextlib.suppress(Exception):
+                    bar_type = BarType.from_str(
+                        f"{instrument}-1-MINUTE-LAST-{src}"
+                    )
+                    for raw in cache.bars(bar_type):
+                        mapped = map_bar(raw)
+                        if mapped is None:
+                            continue
+                        bar = Bar(**mapped)
+                        # Key on ts_event (epoch ns) so equivalent bars from
+                        # both sources collapse. EXTERNAL wins on collision —
+                        # it's the source IB sends directly.
+                        ts_ns = int(bar.ts.timestamp() * 1_000_000_000)
+                        if ts_ns not in merged or src == "EXTERNAL":
+                            merged[ts_ns] = bar
+        # Oldest-first.
+        out = [merged[ts] for ts in sorted(merged.keys())]
+        return out[-count:]
 
     def get_ai_status(self) -> AITraderStatus:
         uptime = (
